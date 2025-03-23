@@ -59,7 +59,7 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1):
                     "total": total_frames,
                     "percent": progress_percent
                 }
-                logging.info(f"PROGRESS_JSON:{json.dumps(progress_json)}", flush=True)
+                print(f"PROGRESS_JSON:{json.dumps(progress_json)}", flush=True)
 
             frame_count += 1
 
@@ -74,7 +74,9 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1):
             "percent": 100,
             "valid_frames": len(frames)
         }
-        logging.info(f"PROGRESS_JSON:{json.dumps(final_progress)}", flush=True)
+        print(f"PROGRESS_JSON:{json.dumps(final_progress)}", flush=True)
+        
+        logging.info(f"Extracted {len(frames)} valid frames from {frame_count} total frames")
         return frames
 
     except Exception as e:

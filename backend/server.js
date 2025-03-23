@@ -9,6 +9,8 @@ const { Server } = require("socket.io");
 // Import Firebase config (ensure it loads first)
 require("./config/firebase");
 
+let aiProcess = null;
+
 const youtubeRoutes = require("./routes/youtubeRoutes");
 const searchQueriesRoute = require("./routes/searchQueries");
 const gettingPermissionIds = require("./routes/permissionRoutes");
@@ -59,26 +61,32 @@ const runCommand = (command, workingDir = path.join(__dirname, "..")) => {
 
     process.on("close", (code) => {
         io.emit("terminal-output", `Process exited with code ${code}`);
+        aiProcess = null; // Reset aiProcess when it stops
     });
-};
 
+    return process; // Return process to track it
+};
 
 // API to start AI server
 app.get("/start-ai", (req, res) => {
+    if (aiProcess) {
+        return res.status(400).json({ error: "AI server is already running." });
+    }
+
     const aiPath = path.join(__dirname, "../ai");
 
     const command = process.platform === "win32"
         ? `.venv\\Scripts\\activate && python main.py`
         : `source .venv/bin/activate && python main.py`;
 
-    runCommand(command, aiPath);
+    aiProcess = runCommand(command, aiPath);
     res.json({ message: "AI server started..." });
 });
 
 // API to stop AI server
 app.get("/stop-ai", (req, res) => {
     if (aiProcess) {
-        aiProcess.kill(); // Kills the process
+        aiProcess.kill();
         aiProcess = null;
         res.json({ message: "AI server stopped..." });
     } else {
@@ -86,6 +94,10 @@ app.get("/stop-ai", (req, res) => {
     }
 });
 
+// API to check AI server status
+app.get("/ai-status", (req, res) => {
+    res.json({ running: aiProcess !== null });
+});
 
 // Routes
 app.use("/api/youtube", youtubeRoutes);
