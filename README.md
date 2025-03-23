@@ -332,6 +332,44 @@ flowchart TD
     style K fill:#E91E63,stroke:#333,stroke-width:1px
 ```
 
+### Process Flow Diagram ###
+
+```mermaid
+flowchart TD
+    A[Start] --> B[Fetch Videos from YouTube]
+    B --> C[Extract Frames & Audio]
+    C --> D[Apply AI-based Detection]
+    D -->|Match Found| E[Calculate Similarity Score]
+    E -->|Above Threshold| F[Generate DMCA Takedown Request]
+    F --> G[Send to YouTube API for Removal]
+    E -->|Below Threshold| H[Flag for Human Review]
+    D -->|No Match Found| I[Allow Video]
+    G --> J[Update Dashboard]
+    H --> J
+    I --> J
+    J --> K[End]
+
+    style A fill:#4CAF50,stroke:#333,stroke-width:2px
+    style K fill:#4CAF50,stroke:#333,stroke-width:2px
+    
+```
+### use case diagram ###
+```mermaid
+graph TD
+    A[Admin] -->|Monitors Dashboard| B[Dashboard System]
+    A -->|Manages Search Queries| C[Search Query Manager]
+    B -->|Sends Queries| D[YouTube API]
+    D -->|Fetches Videos| E[Video Processor]
+    E -->|Extracts Frames & Audio| F[AI Detection Engine]
+    F -->|Matches Reference Data| G[Database]
+    F -->|No Match| H[Whitelist Handler]
+    F -->|Match Found| I[DMCA Generator]
+    I -->|Sends Requests| J[YouTube Takedown API]
+    J -->|Removes Content| K[Content Removal Confirmation]
+    K -->|Updates Logs| L[Audit & Reporting]
+
+    style A fill:#4CAF50,stroke:#333,stroke-width:2px
+```
 ## 🚀 Getting Started
 
 ### Prerequisites
