@@ -169,31 +169,31 @@ classDiagram
 ```mermaid
 flowchart TD
     A[(Firebase)] <--> B[Main Application]
-    
-    subgraph "AI Processing Engine"
-        B --> C[Firebase Handler]
-        C --> D[Get Pending Videos]
-        D --> E[Video Processing Pipeline]
-        
-        E --> F[Video Downloader]
-        F --> G[Frame Extractor]
-        G --> H[Frame Processor]
-        
-        I[YOLO Detector] --> H
-        J[Reference Data] --> H
-        
-        H --> K[Similarity Calculator]
-        K --> L[Generate Timestamps]
-        L --> M[Result Formatter]
-        M --> N[Save to Firebase]
-    end
-    
+
+    B --> C[Firebase Handler]
+    C --> D[Get Pending Videos]
+    D --> E[Video Processing Pipeline]
+
+    E --> F[Video Downloader]
+    F --> G[Frame Extractor]
+    G --> H[Frame Processor]
+
+    I[YOLO Detector] --> H
+    J[Reference Data] --> H
+
+    H --> K[Similarity Calculator]
+    K --> L[Generate Timestamps]
+    L --> M[Result Formatter]
+    M --> N[Save to Firebase]
+
     B --> O[Monitoring & Logging]
-    
+
+    %% Style Definitions
     style A fill:#FF9800,stroke:#333,stroke-width:1px
     style B fill:#9C27B0,stroke:#333,stroke-width:1px
     style I fill:#E91E63,stroke:#333,stroke-width:1px
     style J fill:#3F51B5,stroke:#333,stroke-width:1px
+
 ```
 
 ### Backend
@@ -268,28 +268,28 @@ flowchart TD
     A[Client Browser] <--> B[Express Server]
     B <--> C[(Firebase)]
     
-    subgraph "Backend Architecture"
-        B --> D[YouTube API Service]
-        D --> E[Video Fetcher]
-        B --> F[Permission Controller]
-        B --> G[Search Query Controller]
-        E --> H[Data Formatter]
-        
-        H --> I{Already\nProcessed?}
-        I -->|Yes| J[Skip]
-        I -->|No| K[Store in Firebase]
-        
-        F --> L[Known Channels]
-        F --> M[Permitted Videos]
-        G --> N[Search Query Manager]
-    end
+    B --> D[YouTube API Service]
+    D --> E[Video Fetcher]
+    B --> F[Permission Controller]
+    B --> G[Search Query Controller]
+    E --> H[Data Formatter]
     
+    H --> I{Already\nProcessed?}
+    I -->|Yes| J[Skip]
+    I -->|No| K[Store in Firebase]
+    
+    F --> L[Known Channels]
+    F --> M[Permitted Videos]
+    G --> N[Search Query Manager]
+
     C <--> O[AI Processing System]
-    
+
+    %% Style Definitions
     style B fill:#4CAF50,stroke:#333,stroke-width:1px
     style C fill:#FF9800,stroke:#333,stroke-width:1px
     style D fill:#2196F3,stroke:#333,stroke-width:1px
     style O fill:#9C27B0,stroke:#333,stroke-width:1px
+
 ```
 
 ### Frontend
@@ -306,30 +306,34 @@ flowchart TD
     
     B <--> C[Backend Express Server]
     C <--> D[(Firebase Database)]
-    
-    subgraph "Data Flow"
-        C --> E[YouTube API Service]
-        E --> F[Video Metadata Collection]
-        F --> G[Store in youtube_videos]
-        
-        H[AI Processing Engine] <--> D
-        H --> I[Poll youtube_videos]
-        I --> J[Download & Process Videos]
-        J --> K[YOLO Detection & Comparison]
-        K --> L[Store Results in processed_collection]
-        
-        B --> M[Dashboard Visualization]
-        M --> N[Fetch from processed_collection]
-        M --> O[User Actions]
-        O --> P[DMCA Generation]
-        O --> Q[Whitelist Management]
-    end
-    
-    style B fill:#4CAF50,stroke:#333,stroke-width:1px
-    style C fill:#2196F3,stroke:#333,stroke-width:1px
-    style D fill:#FF9800,stroke:#333,stroke-width:1px
-    style H fill:#9C27B0,stroke:#333,stroke-width:1px
-    style K fill:#E91E63,stroke:#333,stroke-width:1px
+
+    C --> E[YouTube API Service]
+    E --> F[Video Metadata Collection]
+    F --> G[Store in youtube_videos]
+
+    H[AI Processing Engine] <--> D
+    H --> I[Poll youtube_videos]
+    I --> J[Download & Process Videos]
+    J --> K[YOLO Detection & Comparison]
+    K --> L[Store Results in processed_collection]
+
+    B --> M[Dashboard Visualization]
+    M --> N[Fetch from processed_collection]
+    M --> O[User Actions]
+    O --> P[DMCA Generation]
+    O --> Q[Whitelist Management]
+
+    classDef main fill:#08d449,stroke:#333,stroke-width:2px
+    classDef backend fill:#2196F3,stroke:#333,stroke-width:1px
+    classDef ai fill:#959efc,stroke:#333,stroke-width:1px
+    classDef storage fill:#ccc,stroke:#333,stroke-width:1px
+    classDef external fill:#f2a891,stroke:#333,stroke-width:1px
+
+    class A,B main
+    class C backend
+    class D storage
+    class H,K ai
+    class P,Q external
 ```
 
 ### Process Flow Diagram ###
