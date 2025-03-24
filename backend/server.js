@@ -17,6 +17,7 @@ const youtubeRoutes = require("./routes/youtubeRoutes");
 const searchQueriesRoute = require("./routes/searchQueries");
 const gettingPermissionIds = require("./routes/permissionRoutes");
 const processedRoutes = require("./routes/processedRoutes.js");
+const dmcaRoutes = require("./routes/dmcaRoutes.js")
 
 const app = express();
 const server = http.createServer(app);
@@ -106,6 +107,8 @@ app.use("/api/youtube", youtubeRoutes);
 app.use("/api/search-queries", searchQueriesRoute);
 app.use("/api/permissions", gettingPermissionIds);
 app.use("/api/processed", processedRoutes);
+app.use("/api/dmca", dmcaRoutes);
+
 
 // Start Server
 const PORT = process.env.PORT || 5000;
