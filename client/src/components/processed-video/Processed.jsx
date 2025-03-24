@@ -14,6 +14,10 @@ const Processed = () => {
         const year = date.getFullYear();
         return `${day}/${month}/${year}`;
     };
+//todo handleDmca
+    const handleDMCA = ()=>{
+
+    }
 
     useEffect(() => {
         fetchData();
@@ -80,8 +84,8 @@ const Processed = () => {
                                     <p className="video-disc ">Status: {video.copied ? "Copied" : "Not Copied"}</p>
                                     <p className="video-disc">Processed On: {formatFirebaseTimestamp(video.processedAt)}</p>
 
-
-                                    <button>Generate DMCA</button>
+                                    {/* button action to be implemented */}
+                                    <button onClick={handleDMCA}>Generate DMCA</button>
                                 </div>
                             </li>
                         ))
