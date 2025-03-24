@@ -10,6 +10,8 @@ const { Server } = require("socket.io");
 require("./config/firebase");
 
 let aiProcess = null;
+const frontendUrl = process.env.frontend_URL;
+const frontendPort = process.env.frontend_PORT;
 
 const youtubeRoutes = require("./routes/youtubeRoutes");
 const searchQueriesRoute = require("./routes/searchQueries");
@@ -19,12 +21,12 @@ const processedRoutes = require("./routes/processedRoutes.js");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: "http://localhost:5173" }
+    cors: { origin:frontendUrl+frontendPort }
 });
 
 // CORS Configuration
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: frontendUrl+frontendPort,
     methods: "GET,POST,DELETE",
     allowedHeaders: "Content-Type,Authorization",
 }));
