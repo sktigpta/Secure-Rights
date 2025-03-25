@@ -1,4 +1,4 @@
-// File: C:\Users\sktig\Desktop\video-management\app\layout.tsx
+// File: C:\Users\sktig\Desktop\Gdg-Solution-Challenge\client\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
