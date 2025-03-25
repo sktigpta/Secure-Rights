@@ -8,6 +8,8 @@ import itertools
 import numpy as np
 import requests
 import sys
+import threading  # Add this import
+from http.server import HTTPServer, SimpleHTTPRequestHandler  # Add this import
 from datetime import datetime
 from tqdm import tqdm
 from firebase_admin import firestore
@@ -17,6 +19,22 @@ from src.processing.frame_extractor import extract_frames
 from src.processing.compare_results import compare_frames
 from src.models.yolo_detector import YOLODetector
 
+def start_health_check_server():
+    """Start a simple HTTP server for Cloud Run health checks"""
+    class HealthCheckHandler(SimpleHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == '/healthz':
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(b'OK')
+            else:
+                self.send_error(404)
+
+    port = int(os.environ.get('PORT', 8080))
+    server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+    print(f"Health check server running on port {port}")
+    server.serve_forever()
 
 def loading_animation(duration=5):
     """Displays loading status as JSON for frontend visualization"""
@@ -258,8 +276,12 @@ def process_video(firebase, video, reference_data, yolo):
 # Main Application
 # ======================
 def main():
-    """Application entry point"""
+    # Start health check server in a separate thread
+    health_thread = threading.Thread(target=start_health_check_server, daemon=True)
+    health_thread.start()
+
     try:
+        # Rest of your existing main() function remains the same
         loading_animation()
         check_internet_connection()
         configure_logging()

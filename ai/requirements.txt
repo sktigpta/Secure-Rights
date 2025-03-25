@@ -6,7 +6,7 @@ torchvision
 tqdm
 matplotlib
 scipy
-ultralytics  # YOLOv8 support
+ultralytics
 pillow
 requests
 json5
