@@ -26,7 +26,7 @@ const Dashboard = () => {
       <NotificationBar message={notification.message} type={notification.type} onClose={clearNotification} />
 
       <header className="dashboard-header">
-        <h1>Safeguarding Stories: AI for Intellectual Property Protection</h1>
+        <h1>Secure Rights</h1>
       </header>
 
       <main className="dashboard-main">
