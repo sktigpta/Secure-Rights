@@ -1,13 +1,12 @@
 const admin = require("firebase-admin");
-const path = require("path");
 
-// TODO
-const serviceAccount = require("../../serviceAccountKey.json");
+// Parse the JSON stored in the environment variable
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://youtube-scraper-450106-default-rtdb.firebaseio.com",
+    databaseURL: process.env.FIREBASE_DATABASE_URL,
   });
 
   console.log("Firebase initialized successfully!");
