@@ -1,10 +1,16 @@
+import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 class FirebaseHandler:
     def __init__(self):
-        # TO-DO
-        cred = credentials.Certificate("src/firebase/serviceAccountKey.json")
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        service_key_path = os.path.join(base_dir, "serviceAccountKey.json")
+
+        print(f"Resolved service key path: {service_key_path}")
+        print(f"Current working directory: {os.getcwd()}")
+
+        cred = credentials.Certificate(service_key_path)
         firebase_admin.initialize_app(cred)
         self.db = firestore.client()
     

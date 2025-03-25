@@ -5,17 +5,16 @@ backend/node_modules/
 # Ignore Python virtual environment
 ai/.venv/
 
-# Ignore Firebase credentials and environment files
-ai/src/firebase/serviceAccountKey.json
-backend/firebase/serviceAccountKey.json
+# Ignore environment files
 backend/.env
 
 # Ignore AI model files
 ai/src/models/pretrained/
 ai/assets/frames
 ai/assets/videos
-
 ai/logs/processing.log
-
 ai/temp_frames
 ai/processing/queue
+
+# Ignore Firebase credentials
+serviceAccountKey.json
