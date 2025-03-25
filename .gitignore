@@ -18,3 +18,4 @@ ai/processing/queue
 
 # Ignore Firebase credentials
 serviceAccountKey.json
+.vercel
