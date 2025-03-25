@@ -1,4 +1,5 @@
 # 🛡️ Safeguarding Stories: AI for Intellectual Property Protection
+Disney's vast library of intellectual property, including movies, TV shows, and characters, is a prime target for cyberattacks and piracy.Unauthorized access and distribution of this content can lead to significant financial losses and damage to the brand.
 
 <img src="https://storage.googleapis.com/vision-hack2skill-production/innovator/USER00000009/1736408607609-SafeguardingStoriesAIforIntellectualPropertyProtection.png" alt="Disney IP Protection" style="width: 100%; border-radius: 1em;">
 
@@ -6,10 +7,10 @@
 
 ### Prerequisites
 Before proceeding with the installation, ensure that you have the following dependencies installed:
-* **Node.js** (Version 14 or higher)
-* **Python** (Version 3.8 or higher)
-* **Firebase Account**
-* **YouTube Data API Key**
+- **Node.js** (Version 14 or higher)
+- **Python** (Version 3.8 or higher)
+- **Firebase Account**
+- **YouTube Data API Key**
 
 ### Installation
 
@@ -112,19 +113,19 @@ npm start
 The Safeguarding Stories project is built on a robust, multi-component architecture designed to provide comprehensive intellectual property protection:
 
 1. **Backend Service**
-   - Manages data collection
-   - Handles API endpoints
-   - Provides authentication and authorization
+- Manages data collection
+- Handles API endpoints
+- Provides authentication and authorization
 
 2. **AI Processing Engine**
-   - Core detection and analysis functionality
-   - Performs advanced content matching
-   - Identifies potential IP violations
+- Core detection and analysis functionality
+- Performs advanced content matching
+- Identifies potential IP violations
 
 3. **Frontend Dashboard**
-   - Intuitive user interface
-   - Real-time monitoring and reporting
-   - Content management tools
+- Intuitive user interface
+- Real-time monitoring and reporting
+- Content management tools
 
 ### Technology Stack
 
@@ -138,24 +139,60 @@ The Safeguarding Stories project is built on a robust, multi-component architect
 | **Authentication**  | Firebase Auth, JWT                   | Secures access and user sessions                     |
 | **Takedown Automation** | Gemini APIs                       | Auto-generates legal takedown requests               |
 | **Deployment**      | Vercel                               | Cloud hosting for frontend and backend               |
-| **Future Enhancements** | IDX (Google Cloud)                | Additional AI-powered insights and security          |
 
-## 📊 System Workflow
+## Use case diagram
 
 ```mermaid
+graph TD
+    A[Admin] -->|Monitors Dashboard| B[Dashboard System]
+    A -->|Manages Search Queries| C[Search Query Manager]
+    B -->|Sends Queries| D[YouTube API]
+    D -->|Fetches Videos| E[Video Processor]
+    E -->|Extracts Frames & Audio| F[AI Detection Engine]
+    F -->|Matches Reference Data| G[Database]
+    F -->|No Match| H[Whitelist Handler]
+    F -->|Match Found| I[DMCA Generator]
+    I -->|Sends Requests| J[YouTube Takedown API]
+    J -->|Removes Content| K[Content Removal Confirmation]
+    K -->|Updates Logs| L[Audit & Reporting]
+
+    style A fill:#4CAF50,stroke:#333,stroke-width:2px
+```
+**Complete System Architecture and Integration**
+```mermaid
 flowchart TD
-    A[Start] --> B[Fetch Videos]
-    B --> C[Extract Frames & Audio]
-    C --> D[AI-based Detection]
-    D -->|Match Found| E[Calculate Similarity]
-    E -->|Above Threshold| F[Generate DMCA Request]
-    F --> G[Submit Takedown]
-    E -->|Below Threshold| H[Flag for Review]
-    D -->|No Match| I[Allow Content]
-    G --> J[Update Dashboard]
-    H --> J
-    I --> J
-    J --> K[End]
+    A[Client Browser] <--> B[Frontend React App]
+    
+    B <--> C[Backend Express Server]
+    C <--> D[(Firebase Database)]
+
+    C --> E[YouTube API Service]
+    E --> F[Video Metadata Collection]
+    F --> G[Store in youtube_videos]
+
+    H[AI Processing Engine] <--> D
+    H --> I[Poll youtube_videos]
+    I --> J[Download & Process Videos]
+    J --> K[YOLO Detection & Comparison]
+    K --> L[Store Results in processed_collection]
+
+    B --> M[Dashboard Visualization]
+    M --> N[Fetch from processed_collection]
+    M --> O[User Actions]
+    O --> P[DMCA Generation]
+    O --> Q[Whitelist Management]
+
+    classDef main fill:#08d449,stroke:#333,stroke-width:2px
+    classDef backend fill:#2196F3,stroke:#333,stroke-width:1px
+    classDef ai fill:#959efc,stroke:#333,stroke-width:1px
+    classDef storage fill:#ccc,stroke:#333,stroke-width:1px
+    classDef external fill:#f2a891,stroke:#333,stroke-width:1px
+
+    class A,B main
+    class C backend
+    class D storage
+    class H,K ai
+    class P,Q external
 ```
 
 ## 🛠️ Troubleshooting
