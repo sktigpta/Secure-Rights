@@ -21,7 +21,7 @@ const PermittedVideos = ({ onNotification }: PermittedVideosProps) => {
 
   const fetchData = async () => {
     try {
-      const videosRes = await axios.get("https://backend.securerights.app/api/permissions/permitted-videos")
+      const videosRes = await axios.get("backend-mubi4l7ej-shaktidhar-guptas-projects.vercel.apppermissions/permitted-videos")
       setVideos(videosRes.data.permittedVideos)
       videosRes.data.permittedVideos.forEach((video) => fetchVideoDetails(video.videoId))
     } catch (error) {
@@ -47,7 +47,7 @@ const PermittedVideos = ({ onNotification }: PermittedVideosProps) => {
     if (!newVideoId.trim()) return
 
     try {
-      const res = await axios.post("https://backend.securerights.app/api/permissions/permitted-videos", {
+      const res = await axios.post("backend-mubi4l7ej-shaktidhar-guptas-projects.vercel.apppermissions/permitted-videos", {
         videoId: newVideoId,
       })
       setVideos([...videos, { id: res.data.id, videoId: newVideoId }])
@@ -61,7 +61,7 @@ const PermittedVideos = ({ onNotification }: PermittedVideosProps) => {
 
   const handleDeleteVideo = async (id, title) => {
     try {
-      await axios.delete(`https://backend.securerights.app/api/permissions/permitted-videos/${id}`)
+      await axios.delete(`backend-mubi4l7ej-shaktidhar-guptas-projects.vercel.apppermissions/permitted-videos/${id}`)
       setVideos(videos.filter((video) => video.id !== id))
       onNotification(`"${title || "Video"}" removed from permitted list`, "success")
     } catch (error) {

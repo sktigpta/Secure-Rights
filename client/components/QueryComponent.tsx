@@ -7,7 +7,7 @@ import "./videos-and-cards.css"
 const QueryComponent = () => {
   const [queries, setQueries] = useState([])
   const [newQuery, setNewQuery] = useState("")
-  const API_URL = "https://backend.securerights.app/api/search-queries"
+  const API_URL = "backend-mubi4l7ej-shaktidhar-guptas-projects.vercel.appsearch-queries"
 
   useEffect(() => {
     fetchQueries()

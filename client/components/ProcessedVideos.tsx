@@ -39,7 +39,7 @@ const ProcessedVideos = ({ onNotification }: ProcessedVideosProps) => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get("https://backend.securerights.app/api/processed")
+      const response = await axios.get("backend-mubi4l7ej-shaktidhar-guptas-projects.vercel.appprocessed")
       const processedVideos = response.data?.videos || []
       setVideos(processedVideos)
 
