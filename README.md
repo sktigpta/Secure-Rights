@@ -158,7 +158,8 @@ graph TD
 
     style A fill:#4CAF50,stroke:#333,stroke-width:2px
 ```
-**Complete System Architecture and Integration**
+## Complete System Architecture and Integration
+
 ```mermaid
 flowchart TD
     A[Client Browser] <--> B[Frontend React App]
