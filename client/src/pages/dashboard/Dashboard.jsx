@@ -5,7 +5,7 @@ import { ContainerTwo } from "../../components/cards-and-containers/Container";
 import PermittedVideos from "../../components/permitted-channel/permittedChannel";
 import Processed from "../../components/processed-video/Processed";
 import Terminal from "../../components/terminal/Terminal";
-import Query from "../../components/query/query";
+import Query from "../../components/query/Query";
 
 function Dashboard() {
     return (
