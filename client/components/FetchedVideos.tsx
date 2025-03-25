@@ -16,7 +16,7 @@ const FetchedVideos = ({ onNotification }: FetchedVideosProps) => {
 
   const fetchStoredVideos = async () => {
     try {
-      const response = await fetch("backend-mubi4l7ej-shaktidhar-guptas-projects.vercel.appyoutube/stored-videos")
+      const response = await fetch("https://gdg-bakend.vercel.app/api/youtube/stored-videos")
       if (!response.ok) throw new Error("Failed to fetch videos")
 
       const data = await response.json()
@@ -38,7 +38,7 @@ const FetchedVideos = ({ onNotification }: FetchedVideosProps) => {
   const addNewVideos = async () => {
     setRefreshing(true)
     try {
-      const response = await fetch("backend-mubi4l7ej-shaktidhar-guptas-projects.vercel.appyoutube/get-videos", { method: "POST" })
+      const response = await fetch("https://gdg-bakend.vercel.app/api/youtube/get-videos", { method: "POST" })
       if (!response.ok) throw new Error("Failed to fetch new videos")
 
       await fetchStoredVideos()
