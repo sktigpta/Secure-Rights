@@ -7,7 +7,7 @@ import "./videos-and-cards.css"
 const QueryComponent = () => {
   const [queries, setQueries] = useState([])
   const [newQuery, setNewQuery] = useState("")
-  const API_URL = "http://localhost:5000/api/search-queries"
+  const API_URL = "https://backend-gamma-ivory-42.vercel.app/api/search-queries"
 
   useEffect(() => {
     fetchQueries()

@@ -39,7 +39,7 @@ const ProcessedVideos = ({ onNotification }: ProcessedVideosProps) => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/processed")
+      const response = await axios.get("https://backend-gamma-ivory-42.vercel.app/api/processed")
       const processedVideos = response.data?.videos || []
       setVideos(processedVideos)
 
