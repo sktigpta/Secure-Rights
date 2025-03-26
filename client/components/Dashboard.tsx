@@ -26,7 +26,13 @@ const Dashboard = () => {
       <NotificationBar message={notification.message} type={notification.type} onClose={clearNotification} />
 
       <header className="dashboard-header">
-        <h1>Secure Rights</h1>
+          <h1>Secure Rights</h1>
+          <nav>
+            <ul className="navbar-links">
+              <li><a href="#about">About</a></li>
+              <li><a href="#feedback">Feedback</a></li>
+            </ul>
+          </nav>
       </header>
 
       <main className="dashboard-main">
@@ -57,4 +63,3 @@ const Dashboard = () => {
 }
 
 export default Dashboard
-
