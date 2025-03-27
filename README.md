@@ -56,7 +56,8 @@ cd Gdg-Solution-Challenge/ai/assets/videos
 Then, run the following command to download the video:
 
 ```bash
-youtube-dl -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]" -o "sample_video.mp4" <Your video link>
+yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]" -o "sample_video.mp4" "<Your video link>"
+
 ```
 
 #### 3. Backend Setup
