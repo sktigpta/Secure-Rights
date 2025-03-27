@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .email-header {
+            background-color: #28a745;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+        }
+        .email-header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .email-body {
+            padding: 20px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .email-body p {
+            margin: 0 0 15px;
+        }
+        .email-footer {
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #999999;
+        }
+        .verification-code {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+            display: block;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .verification-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .verification-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <h1>Account Verification</h1>
+        </div>
+        <div class="email-body">
+            <p>Hi {{name}},</p>
+            <p>Thank you for signing up! To complete your registration, please enter the verification code below:</p>
+            <div class="verification-code">
+                {{verificationCode}}
+            </div>
+            <p>If you did not create this account, please ignore this email or contact support.</p>
+            <p>Thank you,<br>The Farm-Flo Team</p>
+        </div>
+        <div class="email-footer">
+            <p>&copy; 2024 Farm-Flo. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,51 +1,68 @@
 const puppeteer = require("puppeteer");
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
+const { sendDMCAEmail } = require("../nodemailer/sendEmail"); // Import sendDMCAEmail
 
 exports.submitDMCA = async (req, res) => {
     const { email, name, videoURL, contentTitle } = req.body;
-
-    const data={
-        "email":email,
-        "name":name,
-        "videoURL":videoURL,
-        "contentTitle":contentTitle
-    }
-    console.log("data received!",data);
 
     if (!email || !name || !videoURL || !contentTitle) {
         return res.status(400).json({ error: "Missing required fields" });
     }
 
+    console.log("DMCA data received:", { email, name, videoURL, contentTitle });
+
     try {
-        const browser = await puppeteer.launch({ headless: false }); // Set to `true` for silent execution
-        const page = await browser.newPage();
+        // Ensure the attachments directory exists
+        const attachmentsDir = path.join(__dirname, "attachments");
+        if (!fs.existsSync(attachmentsDir)) {
+            fs.mkdirSync(attachmentsDir, { recursive: true });
+        }
 
-        await page.goto("https://support.google.com/youtube/answer/2807622");
+        // Generate PDF file path
+        const pdfPath = path.join(attachmentsDir, `DMCA_Notice_${Date.now()}.pdf`);
 
-        // Click "Submit a copyright complaint"
-        await page.waitForSelector('a[href*="youtube.com/copyright_complaint_form"]');
-        await page.click('a[href*="youtube.com/copyright_complaint_form"]');
+        // Create PDF
+        const doc = new PDFDocument();
+        const stream = fs.createWriteStream(pdfPath);
+        doc.pipe(stream);
 
-        // Wait for the form to load
-        await page.waitForSelector('input[name="full_name"]');
+        doc.fontSize(16).text("DMCA Notice", { align: "center" }).moveDown();
+        doc.fontSize(12).text(`Full Name: ${name}`).moveDown();
+        doc.text(`Email: ${email}`).moveDown();
+        doc.text(`Content Title: ${contentTitle}`).moveDown();
+        doc.text(`Video URL: ${videoURL}`).moveDown();
+        doc.text("I confirm that I am the rightful owner of the content mentioned above.").moveDown();
+        doc.text("This DMCA notice is submitted in good faith under penalty of perjury.").moveDown();
 
-        // Fill in the form
-        await page.type('input[name="full_name"]', name);
-        await page.type('input[name="email"]', email);
-        await page.type('textarea[name="work_description"]', `Title: ${contentTitle}`);
-        await page.type('textarea[name="infringing_urls"]', videoURL);
+        doc.end();
 
-        // Agree to terms (Modify selectors based on YouTube's form structure)
-        await page.click('input[name="declaration_good_faith"]');
-        await page.click('input[name="declaration_accuracy"]');
+        // Handle PDF generation errors
+        stream.on("error", (error) => {
+            console.error("Error writing PDF file:", error);
+            return res.status(500).json({ error: "Failed to generate DMCA PDF" });
+        });
 
-        // Click Submit
-        await page.click('button[type="submit"]');
+        stream.on("finish", async () => {
+            try {
+                // Send the DMCA notice via email
+                await sendDMCAEmail(email, name, pdfPath);
 
-        await browser.close();
+                // Delete the generated PDF after sending
+                fs.unlink(pdfPath, (err) => {
+                    if (err) console.error("Error deleting PDF file:", err);
+                });
 
-        res.json({ message: "DMCA request submitted successfully!" });
+                res.json({ message: "DMCA request submitted and email sent successfully!" });
+            } catch (emailError) {
+                console.error("Error sending DMCA email:", emailError);
+                res.status(500).json({ error: "DMCA email sending failed" });
+            }
+        });
+
     } catch (error) {
-        console.error("Error submitting DMCA:", error);
-        res.status(500).json({ error: "Failed to submit DMCA request" });
+        console.error("Error processing DMCA request:", error);
+        res.status(500).json({ error: "Failed to process DMCA request" });
     }
 };
