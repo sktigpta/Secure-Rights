@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { RefreshCw, ChevronUp, ChevronDown, ExternalLink } from "lucide-react"
+import { RefreshCw, ChevronUp, ChevronDown, ExternalLink, AlertCircle, Loader } from "lucide-react"
 import "./styles.css"
 
 interface FetchedVideosProps {
@@ -49,7 +49,7 @@ const FetchedVideos = ({ onNotification }: FetchedVideosProps) => {
     setRefreshing(false)
   }
 
-  const openYoutubeVideo = (videoId) => {
+  const openYoutubeVideo = (videoId: string) => {
     window.open(`https://www.youtube.com/watch?v=${videoId}`, "_blank")
   }
 
@@ -109,6 +109,18 @@ const FetchedVideos = ({ onNotification }: FetchedVideosProps) => {
                     <p className="video-date">
                       {video.publishedAt ? new Date(video.publishedAt).toLocaleDateString() : "Unknown Date"}
                     </p>
+
+                    {/* Show Processing or Failed Status Only */}
+                    {video.status === "failed" && (
+                      <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
+                        <AlertCircle size={14} /> Failed
+                      </div>
+                    )}
+                    {video.status === "processing" && (
+                      <div className="flex items-center gap-1 text-yellow-500 text-sm mt-1">
+                        <Loader size={14} className="animate-spin" /> Processing...
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -123,4 +135,3 @@ const FetchedVideos = ({ onNotification }: FetchedVideosProps) => {
 }
 
 export default FetchedVideos
-
