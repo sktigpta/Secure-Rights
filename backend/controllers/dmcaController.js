@@ -9,7 +9,6 @@ exports.submitDMCA = async (req, res) => {
         "videoURL":videoURL,
         "contentTitle":contentTitle
     }
-    console.log("data received!",data);
 
     if (!email || !name || !videoURL || !contentTitle) {
         return res.status(400).json({ error: "Missing required fields" });
