@@ -135,17 +135,15 @@ export default function Home() {
   };
 
   return (
-    <div className="relative h-screen overflow-hidden bg-gradient-to-br from-blue-600 to-blue-400">
-      {/* Navigation - 60% width with reduced height and padding */}
+    <div className="relative h-screen overflow-hidden bg-gradient-to-br from-[#00a6ff] to-[#130e0f]">
       <div className="flex justify-center mt-3">
       <nav className="w-full md:w-3/5 flex justify-between items-center px-4 md:px-5 py-2 bg-white/10 backdrop-blur-lg rounded-2xl text-white z-20 mx-2 md:mx-0">
-          {/* Brand/Logo remains the same */}
+
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-white" />
             <span className="text-lg font-bold">SecureRights</span>
           </div>
           
-          {/* Responsive Auth Buttons */}
           {isAuthenticated ? (
             <div className="flex items-center gap-2 md:gap-3">
               {/* Hide Dashboard on mobile */}

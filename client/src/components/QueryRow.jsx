@@ -62,10 +62,10 @@ const QueryRow = ({ onNotification }) => {
   }
 
   return (
-    <div className="flex items-center gap-3 py-2 w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
+    <div className="flex items-center gap-3 w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent">
       <input
         type="text"
-        className="min-w-[200px] py-2 px-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
+        className="min-w-[250px] py-2 px-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
         placeholder="Add new query..."
         value={newQuery}
         onChange={(e) => setNewQuery(e.target.value)}
