@@ -27,6 +27,17 @@ const Dashboard = ({ token }) => {
     setNotification({ message: "", type: null })
   }
 
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('authToken');
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
+  };
+
   // Fetch user details function
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -56,7 +67,7 @@ const Dashboard = ({ token }) => {
           </div>
         </Link>
         <nav>
-          <ul className="flex gap-6 items-center">
+          <ul className="flex gap-1 items-center">
             <li>
               <a className = "px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
                 href="https://docs.google.com/forms/d/e/1FAIpQLSdZEqtUaM02fIbDwkcbhHuN-CSexYL9dswws5Jhm_DnPb7OPA/viewform?usp=sf_link"
@@ -69,6 +80,12 @@ const Dashboard = ({ token }) => {
             {userName && (
               <li className="bg-white text-blue-700 px-4 py-1 rounded-full font-semibold shadow-sm">{userName}</li>
             )}
+            <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
+              >
+                <LogOut className="h-3 w-3" />
+              </button>
           </ul>
         </nav>
       </header>
