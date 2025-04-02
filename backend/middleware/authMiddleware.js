@@ -9,7 +9,7 @@ const authenticate = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken;  // Store decoded token (including uid) in request object
+    req.user = decodedToken;
     next();
   } catch (error) {
     return res.status(401).json({ message: "Invalid token" });
