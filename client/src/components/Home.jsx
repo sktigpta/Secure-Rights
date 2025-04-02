@@ -138,28 +138,30 @@ export default function Home() {
     <div className="relative h-screen overflow-hidden bg-gradient-to-br from-blue-600 to-blue-400">
       {/* Navigation - 60% width with reduced height and padding */}
       <div className="flex justify-center mt-3">
-        <nav className="w-3/5 flex justify-between items-center px-5 py-2 bg-white/10 backdrop-blur-lg rounded-2xl text-white  z-20">
-          {/* Brand/Logo on left */}
+      <nav className="w-full md:w-3/5 flex justify-between items-center px-4 md:px-5 py-2 bg-white/10 backdrop-blur-lg rounded-2xl text-white z-20 mx-2 md:mx-0">
+          {/* Brand/Logo remains the same */}
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-white" />
             <span className="text-lg font-bold">SecureRights</span>
           </div>
           
-          {/* Login/Dashboard/Logout buttons on right */}
+          {/* Responsive Auth Buttons */}
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Hide Dashboard on mobile */}
               <Link 
                 to="/dashboard" 
-                className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium cursor-pointer"
+                className="hidden md:inline-block px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium cursor-pointer"
               >
                 Dashboard
               </Link>
+              {/* Logout - Icon only on mobile */}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm cursor-pointer"
+                className="flex items-center gap-1 px-2 md:px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm cursor-pointer"
               >
                 <LogOut className="h-3 w-3" />
-                Logout
+                <span className="hidden md:inline">Logout</span>
               </button>
             </div>
           ) : (
@@ -176,9 +178,10 @@ export default function Home() {
       {/* Background animation canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
-      {/* Content */}
       <div className="relative z-10 flex items-center justify-center h-screen">
         <div className="max-w-3xl px-6 text-center">
+          
+
           <div className="flex justify-center mb-6">
             <div className="p-3 rounded-full bg-white/10 backdrop-blur-sm">
               <Shield className="h-12 w-12 text-white" />
@@ -188,8 +191,19 @@ export default function Home() {
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl mb-4">SecureRights</h1>
 
           <p className="text-xl text-white/80 mb-8 max-w-lg mx-auto">
-          afeguard, distribute, and manage digital content with advanced DRM, AI-powered insights, and seamless access for libraries and publishers.
+          Safeguard, distribute, and manage digital content with advanced DRM, AI-powered insights, and seamless access for libraries and publishers.
           </p>
+
+          {isAuthenticated && (
+            <div className="md:hidden mb-6">
+              <Link 
+                to="/dashboard" 
+                className=" text-white/80 inline-block px-6 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/20 hover:bg-white/30 transition-colors text-sm font-medium"
+              >
+                Dashboard
+              </Link>
+            </div>
+          )}
 
           {/* Stats cards */}
           <div className="mt-12 grid grid-cols-3 gap-8 text-white">
