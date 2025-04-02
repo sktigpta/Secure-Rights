@@ -7,6 +7,8 @@ import FetchedVideos from "./FetchedVideos"
 import ProcessedVideos from "./ProcessedVideos"
 import PermittedVideos from "./PermittedVideos"
 import { getUserDetails } from "../services/service"
+import { Shield, LogOut } from "lucide-react";
+
 
 const Dashboard = ({ token }) => {
   const [notification, setNotification] = useState({
@@ -45,22 +47,27 @@ const Dashboard = ({ token }) => {
     <div className="min-h-screen flex flex-col">
       <NotificationBar message={notification.message} type={notification.type} onClose={clearNotification} />
 
-      <header className="py-1 px-20 border-b border-gray-200 bg-blue-600 text-white flex flex-row justify-between">
-        <Link to="/"><h1 className="text-2xl font-semibold">Secure Rights</h1></Link>
+      {/* Updated Header */}
+      <header className="py-3 px-10 border-b border-gray-300 bg-blue-700 text-white flex items-center justify-between shadow-md">
+        <Link to="/" className="text-3xl font-bold tracking-wide">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-white" />
+            <span className="text-lg font-bold">SecureRights</span>
+          </div>
+        </Link>
         <nav>
-          <ul className="flex flex-row gap-4 items-center justify-center h-full">
+          <ul className="flex gap-6 items-center">
             <li>
-              <a
+              <a className = "px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
                 href="https://docs.google.com/forms/d/e/1FAIpQLSdZEqtUaM02fIbDwkcbhHuN-CSexYL9dswws5Jhm_DnPb7OPA/viewform?usp=sf_link"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline"
               >
                 Feedback
               </a>
             </li>
             {userName && (
-              <li className="text-white font-semibold">{userName}</li>
+              <li className="bg-white text-blue-700 px-4 py-1 rounded-full font-semibold shadow-sm">{userName}</li>
             )}
           </ul>
         </nav>
@@ -84,7 +91,7 @@ const Dashboard = ({ token }) => {
         </div>
       </main>
 
-      <footer className="p-4 text-right text-gray-500 text-sm border-t border-gray-200 bg-white">
+      <footer className="p-4 text-right text-gray-500 text-sm border-t border-gray-300 bg-gray-50">
         <p>
           We are team <span className="font-semibold">Tech-NO-Logic</span>
         </p>

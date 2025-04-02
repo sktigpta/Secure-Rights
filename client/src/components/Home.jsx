@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, Shield } from "lucide-react";
+import { Shield, LogOut } from "lucide-react";
+import { auth } from '../firebase/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -8,16 +10,14 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuthenticationStatus = () => {
-      const user = localStorage.getItem("user");
+    // Check authentication status using Firebase Auth
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
       }
-    };
-
-    checkAuthenticationStatus();
+    });
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -119,20 +119,60 @@ export default function Home() {
 
     return () => {
       window.removeEventListener("resize", setCanvasDimensions);
+      unsubscribe(); // Clean up the auth listener
     };
-  }, []);
+  }, [navigate]);
 
-  // Handle "Get Started" button click
-  const handleGetStartedClick = () => {
-    if (isAuthenticated) {
-      navigate("/dashboard"); // Redirect to dashboard if authenticated
-    } else {
-      navigate("/register"); // Redirect to register page if not authenticated
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('authToken');
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout Error:", error);
     }
   };
 
   return (
     <div className="relative h-screen overflow-hidden bg-gradient-to-br from-blue-600 to-blue-400">
+      {/* Navigation - 60% width with reduced height and padding */}
+      <div className="flex justify-center mt-3">
+        <nav className="w-3/5 flex justify-between items-center px-5 py-2 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg text-white  z-20">
+          {/* Brand/Logo on left */}
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-white" />
+            <span className="text-lg font-bold">SecureRights</span>
+          </div>
+          
+          {/* Login/Dashboard/Logout buttons on right */}
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <Link 
+                to="/dashboard" 
+                className="px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm cursor-pointer"
+              >
+                <LogOut className="h-3 w-3" />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link 
+              to="/login" 
+              className="px-4 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
+            >
+              Login
+            </Link>
+          )}
+        </nav>
+      </div>
+
       {/* Background animation canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
@@ -151,28 +191,17 @@ export default function Home() {
             Protect and manage your digital content rights with our advanced security platform.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-4">
-            <button 
-              onClick={handleGetStartedClick}
-              className="bg-white text-blue-600 hover:bg-white/90 px-6 py-3 rounded-lg text-lg flex items-center backdrop-blur-sm"
-            >
-              Get Started <ArrowRight className="ml-2 h-4 w-4" />
-            </button>
-            <button className="border-white text-white hover:bg-white/10 px-6 py-3 rounded-lg text-lg backdrop-blur-sm">
-              Learn More
-            </button>
-          </div>
-
+          {/* Stats cards */}
           <div className="mt-12 grid grid-cols-3 gap-8 text-white">
-            <div className="flex flex-col items-center backdrop-blur-sm p-4">
+            <div className="flex flex-col items-center backdrop-blur-sm bg-white/10 p-4 rounded-xl">
               <div className="text-3xl font-bold">100%</div>
               <div className="text-sm text-white/70">Security Coverage</div>
             </div>
-            <div className="flex flex-col items-center backdrop-blur-sm p-4">
+            <div className="flex flex-col items-center backdrop-blur-sm bg-white/10 p-4 rounded-xl">
               <div className="text-3xl font-bold">24/7</div>
               <div className="text-sm text-white/70">Monitoring</div>
             </div>
-            <div className="flex flex-col items-center backdrop-blur-sm p-4">
+            <div className="flex flex-col items-center backdrop-blur-sm bg-white/10 p-4 rounded-xl">
               <div className="text-3xl font-bold">99.9%</div>
               <div className="text-sm text-white/70">Uptime</div>
             </div>
