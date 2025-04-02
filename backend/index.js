@@ -11,6 +11,7 @@ const searchQueriesRoute = require("./routes/searchQueries.js");
 const gettingPermissionIds = require("./routes/permissionRoutes.js");
 const processedRoutes = require("./routes/processedRoutes.js");
 const dmcaRoutes = require("./routes/dmcaRoutes.js");
+const authRoutes = require("./routes/authRoutes.js");
 
 const app = express();
 
@@ -43,6 +44,11 @@ app.use("/api/search-queries", searchQueriesRoute);
 app.use("/api/permissions", gettingPermissionIds);
 app.use("/api/processed", processedRoutes);
 app.use("/api/dmca", dmcaRoutes);
+app.use("/api/auth", authRoutes);  // Authentication routes
 
 // Export the app for Vercel's serverless functions
 module.exports = app;
+
+// app.listen(5000, () => {
+//   console.log("server started");
+// });
