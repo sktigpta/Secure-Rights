@@ -188,7 +188,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl mb-4">SecureRights</h1>
 
           <p className="text-xl text-white/80 mb-8 max-w-lg mx-auto">
-            Protect and manage your digital content rights with our advanced security platform.
+          afeguard, distribute, and manage digital content with advanced DRM, <br /> AI-powered insights, and seamless access for libraries and publishers.
           </p>
 
           {/* Stats cards */}
