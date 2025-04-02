@@ -47,7 +47,7 @@ const PermittedVideos = ({ onNotification }) => {
     if (!newVideoId.trim()) return
 
     try {
-      const res = await axios.post(`${API_URL}/api/permissions/permitted-videos`, {
+      const res = await axios.post(`${API_URL}/permissions/permitted-videos`, {
         videoId: newVideoId,
       })
       setVideos((prevVideos) => [...prevVideos, { id: res.data.id, videoId: newVideoId }])
@@ -61,7 +61,7 @@ const PermittedVideos = ({ onNotification }) => {
 
   const handleDeleteVideo = async (id, title) => {
     try {
-      await axios.delete(`${API_URL}/api/permissions/permitted-videos/${id}`)
+      await axios.delete(`${API_URL}/permissions/permitted-videos/${videoId}`)
       setVideos(videos.filter((video) => video.id !== id))
       onNotification(`"${title || "Video"}" removed from permitted list`, "success")
     } catch (error) {
