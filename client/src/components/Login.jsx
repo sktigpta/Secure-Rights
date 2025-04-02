@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { loginUser } from '../services/service';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth } from '../firebase/firebase'; // Import Firebase auth
+import { auth } from '../firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 function Login() {
