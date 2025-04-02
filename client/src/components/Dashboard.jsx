@@ -1,12 +1,15 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import NotificationBar from "./NotificationBar"
 import QueryRow from "./QueryRow"
 import FetchedVideos from "./FetchedVideos"
 import ProcessedVideos from "./ProcessedVideos"
 import PermittedVideos from "./PermittedVideos"
-import { getUserDetails } from "../services/service"
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase/firebase';
+
+
 import { Shield, LogOut } from "lucide-react";
 
 
@@ -27,6 +30,9 @@ const Dashboard = ({ token }) => {
     setNotification({ message: "", type: null })
   }
 
+
+  const navigate = useNavigate();
+
   // Handle logout
   const handleLogout = async () => {
     try {
@@ -38,28 +44,11 @@ const Dashboard = ({ token }) => {
     }
   };
 
-  // Fetch user details function
-  useEffect(() => {
-    const fetchUserDetails = async () => {
-      try {
-        const userDetails = await getUserDetails(token)
-        setUserName(userDetails.name)
-      } catch (error) {
-        console.error("Error fetching user details:", error)
-      }
-    }
-
-    if (token) {
-      fetchUserDetails()
-    }
-  }, [token])
-
   return (
     <div className="min-h-screen flex flex-col">
       <NotificationBar message={notification.message} type={notification.type} onClose={clearNotification} />
 
-      {/* Updated Header */}
-      <header className="py-3 px-10 border-b border-gray-300 bg-blue-700 text-white flex items-center justify-between shadow-md">
+      <header className="py-3 px-5 md:px-10 border-b border-gray-300 bg-blue-700 text-white flex items-center justify-between shadow-md">
         <Link to="/" className="text-3xl font-bold tracking-wide">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-white" />
@@ -67,9 +56,10 @@ const Dashboard = ({ token }) => {
           </div>
         </Link>
         <nav>
-          <ul className="flex gap-1 items-center">
-            <li>
-              <a className = "px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
+          <ul className="flex gap-1 md:gap-2 items-center">
+            {/* Hidden on mobile, visible on medium screens and up */}
+            <li className="hidden md:inline-block">
+              <a className="px-2 md:px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
                 href="https://docs.google.com/forms/d/e/1FAIpQLSdZEqtUaM02fIbDwkcbhHuN-CSexYL9dswws5Jhm_DnPb7OPA/viewform?usp=sf_link"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -77,15 +67,12 @@ const Dashboard = ({ token }) => {
                 Feedback
               </a>
             </li>
-            {userName && (
-              <li className="bg-white text-blue-700 px-4 py-1 rounded-full font-semibold shadow-sm">{userName}</li>
-            )}
             <button
-                onClick={handleLogout}
-                className="px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
-              >
-                <LogOut className="h-3 w-3" />
-              </button>
+              onClick={handleLogout}
+              className="px-2 md:px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer flex items-center justify-center"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </ul>
         </nav>
       </header>

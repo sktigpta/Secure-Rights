@@ -1,43 +1,87 @@
 const { admin } = require("../config/firebase");
 
-// REGISTER (Creates a user in Firebase Authentication)
 exports.register = async (req, res) => {
-  const { email, password, name, role = 'user' } = req.body;
-
-  console.log(req.body);
+  const { email, password, name } = req.body;
 
   try {
+    // Create user in Firebase Authentication
     const userRecord = await admin.auth().createUser({
       email,
       password,
       displayName: name,
-      customClaims: { role },
+      customClaims: { role: 'user' } // Default role
     });
 
-    // Respond with user details (UID, email, and name)
-    res.status(201).json({ uid: userRecord.uid, email: userRecord.email, name, role });
+    // Return user data without sensitive info
+    res.status(201).json({
+      uid: userRecord.uid,
+      email: userRecord.email,
+      name: userRecord.displayName,
+      role: 'user'
+    });
+    
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Registration error:', error);
+    res.status(400).json({ 
+      error: error.message.includes("email") 
+        ? "Email already exists" 
+        : "Registration failed" 
+    });
+  }
+};
+
+exports.login = async (req, res) => {
+  res.status(200).json({ 
+    message: "Authentication should be handled client-side using Firebase SDK" 
+  });
+};
+
+exports.getMe = async (req, res) => {
+  try {
+    const user = await admin.auth().getUser(req.user.uid);
+    
+    res.json({
+      uid: user.uid,
+      email: user.email,
+      name: user.displayName,
+      role: req.user.role || 'user'
+    });
+    
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
 
-// LOGIN (Handled on Frontend, Firebase does not support login on backend)
-exports.login = async (req, res) => {
-  res.status(200).json({ message: "Login via Firebase Client SDK" });
-};
+exports.setUserRole = async (req, res) => {
+  const { uid, role } = req.body;
 
-// GET USER DETAILS (Protected, Requires Firebase ID Token)
-exports.getMe = async (req, res) => {
   try {
-    const userRecord = await admin.auth().getUser(req.user.uid);
+    // Validate role
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({ error: "Invalid role specified" });
+    }
+
+    // Update custom claims
+    await admin.auth().setCustomUserClaims(uid, { role });
+    
+    // Get updated user data
+    const user = await admin.auth().getUser(uid);
 
     res.json({
-      uid: userRecord.uid,
-      email: userRecord.email,
-      name: userRecord.displayName,
+      uid: user.uid,
+      email: user.email,
+      role: role,
+      message: "Role updated successfully"
     });
+    
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Role update error:', error);
+    res.status(400).json({ 
+      error: error.message.includes("no user") 
+        ? "User not found" 
+        : "Role update failed" 
+    });
   }
 };
