@@ -1,8 +1,17 @@
 "use client"
+import { useEffect } from "react"
 import { X } from "lucide-react"
 
 const NotificationBar = ({ message, type, onClose }) => {
   if (!message) return null
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose()
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [message, onClose])
 
   const getNotificationClass = () => {
     switch (type) {

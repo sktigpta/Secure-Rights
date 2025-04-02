@@ -61,13 +61,23 @@ const PermittedVideos = ({ onNotification }) => {
 
   const handleDeleteVideo = async (id, title) => {
     try {
-      await axios.delete(`${API_URL}/permissions/permitted-videos/${videoId}`)
-      setVideos(videos.filter((video) => video.id !== id))
-      onNotification(`"${title || "Video"}" removed from permitted list`, "success")
+      console.log(`Attempting to delete video with ID: ${id}`);
+      
+      const response = await axios.delete(`${API_URL}/permissions/permitted-videos/${id}`);
+  
+      if (response.status === 200 || response.status === 204) {
+        setVideos(videos.filter((video) => video.id !== id));
+        onNotification(`"${title || "Video"}" removed from permitted list`, "success");
+      } else {
+        console.error("Unexpected response status:", response.status);
+        onNotification("Failed to delete video", "error");
+      }
     } catch (error) {
-      onNotification("Failed to delete video", "error")
+      console.error("Error deleting video:", error.response?.data || error.message);
+      onNotification("Failed to delete video", "error");
     }
-  }
+  };
+
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
