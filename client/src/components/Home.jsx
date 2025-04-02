@@ -138,7 +138,7 @@ export default function Home() {
     <div className="relative h-screen overflow-hidden bg-gradient-to-br from-blue-600 to-blue-400">
       {/* Navigation - 60% width with reduced height and padding */}
       <div className="flex justify-center mt-3">
-        <nav className="w-3/5 flex justify-between items-center px-5 py-2 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg text-white  z-20">
+        <nav className="w-3/5 flex justify-between items-center px-5 py-2 bg-white/10 backdrop-blur-lg rounded-2xl text-white  z-20">
           {/* Brand/Logo on left */}
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-white" />
@@ -150,13 +150,13 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <Link 
                 to="/dashboard" 
-                className="px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
+                className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium cursor-pointer"
               >
                 Dashboard
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm cursor-pointer"
               >
                 <LogOut className="h-3 w-3" />
                 Logout
@@ -165,7 +165,7 @@ export default function Home() {
           ) : (
             <Link 
               to="/login" 
-              className="px-4 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
+              className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium cursor-pointer"
             >
               Login
             </Link>
