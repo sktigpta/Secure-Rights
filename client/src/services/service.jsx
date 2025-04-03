@@ -11,7 +11,7 @@ const handleAuthError = (error, defaultMessage) => {
   const errorMessage = error.response?.data?.error || defaultMessage;
   return Promise.reject({
     message: errorMessage,
-    requiresLogout: error.response?.status === 401 // Flag for logout requirement
+    requiresLogout: error.response?.status === 401
   });
 };
 
