@@ -34,7 +34,7 @@ const FetchedVideos = ({ onNotification }) => {
   const addNewVideos = async () => {
     setRefreshing(true)
     try {
-      const response = await fetch(`${API_URL}/api/youtube/get-videos`, { method: "POST" })
+      const response = await fetch(`${API_URL}/youtube/get-videos`, { method: "POST" })
       if (!response.ok) throw new Error("Failed to fetch new videos")
 
       await fetchStoredVideos()

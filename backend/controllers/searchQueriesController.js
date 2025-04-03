@@ -13,7 +13,7 @@ const getSearchQueries = async (req, res) => {
 
     res.status(200).json(queries);
   } catch (error) {
-    console.error("❌ Error fetching search queries:", error);
+    console.error("Error fetching search queries:", error);
     res.status(500).json({ error: "Failed to fetch search queries" });
   }
 };
@@ -30,7 +30,7 @@ const addSearchQuery = async (req, res) => {
 
     res.status(201).json({ id: newQuery.id, query });
   } catch (error) {
-    console.error("❌ Error adding search query:", error);
+    console.error("Error adding search query:", error);
     res.status(500).json({ error: "Failed to add search query" });
   }
 };
@@ -45,7 +45,7 @@ const deleteSearchQuery = async (req, res) => {
 
     res.status(200).json({ message: "Search query deleted successfully" });
   } catch (error) {
-    console.error("❌ Error deleting search query:", error);
+    console.error("Error deleting search query:", error);
     res.status(500).json({ error: "Failed to delete search query" });
   }
 };
