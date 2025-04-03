@@ -95,7 +95,7 @@ const Dashboard = ({ token }) => {
         </div>
       </main>
 
-      <footer className="p-4 text-right text-gray-500 text-sm border-t border-gray-300 bg-gray-50">
+      <footer className="p-2 text-right text-gray-500 text-sm border-t border-gray-300 bg-gray-50">
         <p>
           We are team <span className="font-semibold">Tech-NO-Logic</span>
         </p>
