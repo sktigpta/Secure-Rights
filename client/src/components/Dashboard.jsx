@@ -13,7 +13,7 @@ import ProcessedVideos from "./ProcessedVideos";
 import PermittedVideos from "./PermittedVideos";
 
 const teamMembers = [
-  "Shaktidhar (Team Leader)",
+  "Shaktidhar Gupta (Team Leader)",
   "Satyam Kumar (Backend)",
   "Saurav Kumar (Frontend)",
   "Rishi (UI & UX)"
@@ -75,7 +75,7 @@ const Dashboard = ({ token }) => {
         </nav>
       </header>
 
-      <main className="flex-1 p-5 flex flex-col gap-5 max-w-[1400px] mx-auto w-full">
+      <main className="flex-1 p-2 flex flex-col gap-4 max-w-[1400px] mx-auto w-full">
         <QueryRow onNotification={showNotification} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <FetchedVideos onNotification={showNotification} />
@@ -84,7 +84,7 @@ const Dashboard = ({ token }) => {
         </div>
       </main>
 
-      <footer className="p-2 flex justify-end gap-3 items-center text-gray-500 text-sm border-t border-gray-300 bg-gray-50">
+      <footer className="p-1 flex justify-end gap-2 items-center text-gray-500 text-sm border-t border-gray-300 bg-gray-50">
         <p>
           <motion.span
             key={index}
@@ -103,12 +103,13 @@ const Dashboard = ({ token }) => {
         </p>
 
         <a
-          href="https://github.com/your-repo-link"
+          href="https://github.com/sktigpta/Gdg-Solution-Challenge"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-blue-500"
+          className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition"
         >
           <Github size={16} />
+          <span>GitHub</span>
         </a>
       </footer>
     </div>
