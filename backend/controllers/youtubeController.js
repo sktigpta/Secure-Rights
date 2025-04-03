@@ -54,10 +54,9 @@ const getKnownChannels = async () => {
   return new Set(snapshot.docs.map((doc) => doc.id));
 };
 
-// Fetch YouTube Shorts videos
 const getYouTubeVideos = async (req, res) => {
   try {
-    await createCollectionsIfNotExist(); // Ensure collections exist
+    await createCollectionsIfNotExist();
 
     const searchQueries = await getSearchQueries();
     if (searchQueries.length === 0) {
@@ -68,8 +67,8 @@ const getYouTubeVideos = async (req, res) => {
     const knownChannels = await getKnownChannels();
     let allVideos = [];
 
-    const publishedAfter = new Date();
-    publishedAfter.setDate(publishedAfter.getDate() - 1); // Fetch videos from the last 24 hours
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     for (const query of searchQueries) {
       console.log(`Searching YouTube for: "${query}"`);
@@ -81,40 +80,40 @@ const getYouTubeVideos = async (req, res) => {
           maxResults: MAX_RESULTS,
           order: "date",
           type: "video",
-          publishedAfter: publishedAfter.toISOString(),
+          videoDuration: "short",
+          publishedAfter: oneWeekAgo.toISOString(),
           key: YOUTUBE_API_KEY,
         },
       });
 
       const videoIds = response.data.items.map(video => video.id.videoId);
-      if (videoIds.length === 0) continue;
-
-      // Fetch video details to check duration and aspect ratio
-      const videoDetailsResponse = await axios.get("https://www.googleapis.com/youtube/v3/videos", {
+      
+      // Fetch video details (including actual duration)
+      const detailsResponse = await axios.get("https://www.googleapis.com/youtube/v3/videos", {
         params: {
-          part: "contentDetails,snippet",
+          part: "contentDetails",
           id: videoIds.join(","),
           key: YOUTUBE_API_KEY,
         },
       });
 
-      const shortsVideos = videoDetailsResponse.data.items.filter(video => {
-        const duration = video.contentDetails.duration;
-        const isShort = /^PT([0-5]?[0-9]S|1M)$/.test(duration); // Duration <= 60s
-        return isShort;
+      const videoDurations = {};
+      detailsResponse.data.items.forEach(video => {
+        videoDurations[video.id] = parseISO8601Duration(video.contentDetails.duration);
       });
 
-      const filteredVideos = shortsVideos.map(video => ({
-        videoId: video.id,
+      const videos = response.data.items.map(video => ({
+        videoId: video.id.videoId,
         title: video.snippet.title,
         description: video.snippet.description,
         publishedAt: video.snippet.publishedAt,
         channelId: video.snippet.channelId,
         channelTitle: video.snippet.channelTitle,
         query,
+        duration: videoDurations[video.id.videoId] || 0,
       }));
 
-      for (const video of filteredVideos) {
+      for (const video of videos) {
         if (permittedChannels.has(video.channelId)) {
           console.log(`Skipping permitted channel: ${video.channelTitle} (${video.channelId})`);
           continue;
@@ -125,17 +124,32 @@ const getYouTubeVideos = async (req, res) => {
           continue;
         }
 
+        if (video.duration > 120) {
+          console.log(`Skipping video longer than 2 minutes: ${video.title}`);
+          continue;
+        }
+
         allVideos.push(video);
       }
     }
 
     await saveVideoMetadata(allVideos);
-    res.status(200).json({ message: "New Shorts fetched and saved", videos: allVideos });
+    res.status(200).json({ message: "New videos fetched and saved", videos: allVideos });
   } catch (error) {
-    console.error("Error fetching YouTube Shorts:", error.message);
-    res.status(500).json({ error: "Failed to fetch YouTube Shorts" });
+    console.error("Error fetching YouTube videos:", error.message);
+    res.status(500).json({ error: "Failed to fetch YouTube videos" });
   }
 };
+
+// Function to parse ISO 8601 duration (e.g., PT1M45S -> 105 seconds)
+const parseISO8601Duration = (duration) => {
+  const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+  const hours = match[1] ? parseInt(match[1]) * 3600 : 0;
+  const minutes = match[2] ? parseInt(match[2]) * 60 : 0;
+  const seconds = match[3] ? parseInt(match[3]) : 0;
+  return hours + minutes + seconds;
+};
+
 
 //Save video metadata in Firestore
 const saveVideoMetadata = async (videoList) => {
