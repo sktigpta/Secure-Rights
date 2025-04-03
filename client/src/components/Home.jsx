@@ -20,7 +20,7 @@ export default function Home() {
     offset: ["start start", "end start"],
   })
 
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
   const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9])
 
   useEffect(() => {
@@ -252,7 +252,7 @@ export default function Home() {
         </div>
 
         {/* Hero Content */}
-        <motion.div className="relative z-10 flex items-center justify-center min-h-screen px-4 pt-10" style={{ opacity, scale }}>
+        <motion.div className="relative z-10 flex items-center justify-center min-h-screen px-4" style={{ opacity, scale }}>
           <div className="max-w-3xl px-4 md:px-6 text-center">
             {/* Logo/Shield */}
             <div className="flex justify-center mb-6">
@@ -278,31 +278,6 @@ export default function Home() {
               access for libraries and publishers.
             </p>
 
-            {/* CTA Button */}
-            <motion.div
-              className="flex justify-center gap-4 mb-8"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link
-                to={isAuthenticated ? "/dashboard" : "/login"}
-                className="relative overflow-hidden flex items-center bg-white text-blue-600 hover:bg-white/90 px-6 py-2.5 rounded-full font-medium"
-              >
-                {isAuthenticated ? "Go to Dashboard" : "Get Started"}
-                <ArrowRight className="ml-2 h-4 w-4" />
-                <motion.div
-                  className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-blue-100/30 to-transparent"
-                  animate={{
-                    x: ["-100%", "100%"],
-                  }}
-                  transition={{
-                    repeat: Number.POSITIVE_INFINITY,
-                    duration: 1.5,
-                    ease: "linear",
-                  }}
-                />
-              </Link>
-            </motion.div>
 
             {/* Dashboard Button (Mobile Only) */}
             {isAuthenticated && (
@@ -339,7 +314,7 @@ export default function Home() {
 
             {/* Scroll indicator */}
             <motion.div
-              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/60"
+              className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex flex-col items-center text-white/60"
               animate={{
                 y: [0, 10, 0],
                 opacity: [0.4, 0.8, 0.4],
