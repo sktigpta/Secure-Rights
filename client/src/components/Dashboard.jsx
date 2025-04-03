@@ -85,7 +85,7 @@ const Dashboard = ({ token }) => {
       </main>
 
       <footer className="p-1 flex justify-end gap-2 items-center text-gray-500 text-sm border-t border-gray-300 bg-gray-50">
-        <p>
+        <p className="hidden sm:inline">
           <motion.span
             key={index}
             initial={{ opacity: 0, y: 10 }}
@@ -98,9 +98,10 @@ const Dashboard = ({ token }) => {
           </motion.span>
         </p>
 
-        <p>
-          from <span className="font-semibold">Tech-NO-Logic</span>
+        <p className="hidden sm:inline">
+          from
         </p>
+        <span className="font-semibold">Tech-NO-Logic</span>
 
         <a
           href="https://github.com/sktigpta/Gdg-Solution-Challenge"
