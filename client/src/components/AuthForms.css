@@ -1,0 +1,250 @@
+/* AuthForms.css - Glassmorphism and Animation Styles */
+
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  /* Background animations */
+  .auth-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+  
+  .shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.5;
+    animation: float 15s infinite;
+  }
+  
+  .shape1 {
+    width: 500px;
+    height: 500px;
+    background: rgba(255, 107, 129, 0.7);
+    top: -150px;
+    right: -100px;
+    animation-delay: 0s;
+  }
+  
+  .shape2 {
+    width: 400px;
+    height: 400px;
+    background: rgba(99, 125, 255, 0.7);
+    bottom: -100px;
+    left: -50px;
+    animation-delay: 5s;
+  }
+  
+  .shape3 {
+    width: 300px;
+    height: 300px;
+    background: rgba(147, 112, 219, 0.7);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: 10s;
+  }
+  
+  @keyframes float {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-20px) scale(1.05);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  /* Glassmorphism card */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 450px;
+    z-index: 10;
+    position: relative;
+  }
+  
+  /* Form entrance animation */
+  .animate-in {
+    animation: fadeIn 0.8s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Form styling */
+  .card-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .card-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+  }
+  
+  .card-header p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+  }
+  
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .form-group label {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .glass-input {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .glass-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  }
+  
+  .password-hint {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0.25rem 0 0 0;
+  }
+  
+  .submit-button {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 0.5rem;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .submit-button:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px);
+  }
+  
+  .submit-button:active {
+    transform: translateY(0);
+  }
+  
+  .auth-link, .forgot-password {
+    text-align: center;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .auth-link a, 
+  .forgot-password a {
+    color: white;
+    font-weight: 600;
+    text-decoration: underline;
+    transition: all 0.3s ease;
+  }
+  
+  .auth-link a:hover,
+  .forgot-password a:hover {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  }
+  
+  .forgot-password {
+    text-align: right;
+    margin-top: -0.5rem;
+  }
+  
+  .error-message {
+    background: rgba(255, 87, 87, 0.25);
+    border: 1px solid rgba(255, 87, 87, 0.5);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    color: white;
+    font-size: 0.9rem;
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+  
+  @keyframes shake {
+    10%, 90% {
+      transform: translateX(-2px);
+    }
+    20%, 80% {
+      transform: translateX(4px);
+    }
+    30%, 50%, 70% {
+      transform: translateX(-6px);
+    }
+    40%, 60% {
+      transform: translateX(6px);
+    }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+    .glass-card {
+      padding: 1.5rem;
+    }
+    
+    .card-header h1 {
+      font-size: 1.5rem;
+    }
+  }
