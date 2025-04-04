@@ -14,7 +14,7 @@ def compare_frames(target_frames, reference_data, yolo, threshold=0.5):
     
     # Remove nested tqdm from function call
     with tqdm(total=len(target_frames), desc="Comparing Frames", unit="frame") as pbar:
-        for frame_path in target_frames:  # Remove tqdm() here
+        for frame_path in target_frames:
             try:
                 frame = cv2.imread(frame_path)
                 if frame is None:
