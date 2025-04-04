@@ -47,8 +47,8 @@ app.use("/api/dmca", dmcaRoutes);
 app.use("/api/auth", authRoutes);  // Authentication routes
 
 // Export the app for Vercel's serverless functions
-module.exports = app;
+// module.exports = app;
 
-// app.listen(5000, () => {
-//   console.log("server started");
-// });
+app.listen(5000, () => {
+  console.log("server started");
+});

@@ -54,6 +54,8 @@ const getKnownChannels = async () => {
   return new Set(snapshot.docs.map((doc) => doc.id));
 };
 
+
+//Get Youtube Videos
 const getYouTubeVideos = async (req, res) => {
   try {
     await createCollectionsIfNotExist();
@@ -80,15 +82,14 @@ const getYouTubeVideos = async (req, res) => {
           maxResults: MAX_RESULTS,
           order: "date",
           type: "video",
-          videoDuration: "short",
           publishedAfter: oneWeekAgo.toISOString(),
           key: YOUTUBE_API_KEY,
         },
       });
 
-      const videoIds = response.data.items.map(video => video.id.videoId);
-      
-      // Fetch video details (including actual duration)
+      const videoIds = response.data.items.map(item => item.id.videoId);
+      if (videoIds.length === 0) continue;
+
       const detailsResponse = await axios.get("https://www.googleapis.com/youtube/v3/videos", {
         params: {
           part: "contentDetails",
@@ -114,6 +115,9 @@ const getYouTubeVideos = async (req, res) => {
       }));
 
       for (const video of videos) {
+        const titleLower = video.title.toLowerCase();
+        const descLower = video.description.toLowerCase();
+
         if (permittedChannels.has(video.channelId)) {
           console.log(`Skipping permitted channel: ${video.channelTitle} (${video.channelId})`);
           continue;
@@ -124,8 +128,18 @@ const getYouTubeVideos = async (req, res) => {
           continue;
         }
 
-        if (video.duration > 120) {
-          console.log(`Skipping video longer than 2 minutes: ${video.title}`);
+        if (video.duration < 15) {
+          console.log(`Skipping video <15s (likely a Short): ${video.title}`);
+          continue;
+        }
+
+        if (video.duration > 600) {
+          console.log(`Skipping video >10min: ${video.title}`);
+          continue;
+        }
+
+        if (titleLower.includes("#shorts") || descLower.includes("#shorts")) {
+          console.log(`Skipping video tagged as Shorts: ${video.title}`);
           continue;
         }
 
@@ -141,15 +155,17 @@ const getYouTubeVideos = async (req, res) => {
   }
 };
 
-// Function to parse ISO 8601 duration (e.g., PT1M45S -> 105 seconds)
+// Helper: Convert ISO 8601 duration to seconds
 const parseISO8601Duration = (duration) => {
-  const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+
   const hours = match[1] ? parseInt(match[1]) * 3600 : 0;
   const minutes = match[2] ? parseInt(match[2]) * 60 : 0;
   const seconds = match[3] ? parseInt(match[3]) : 0;
+
   return hours + minutes + seconds;
 };
-
 
 //Save video metadata in Firestore
 const saveVideoMetadata = async (videoList) => {
@@ -179,7 +195,7 @@ const saveVideoMetadata = async (videoList) => {
 const getStoredVideos = async (req, res) => {
   try {
     const snapshot = await collections.videos.get();
-    
+
     if (snapshot.empty) {
       return res.status(404).json({ message: "No videos found" });
     }
@@ -193,4 +209,4 @@ const getStoredVideos = async (req, res) => {
   }
 };
 
-module.exports = { getYouTubeVideos , getStoredVideos};
+module.exports = { getYouTubeVideos, getStoredVideos };
