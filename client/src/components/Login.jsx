@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { loginUser } from '../services/service';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth } from '../firebase/firebase';
+import { loginUser } from '../services/service';
 import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase/firebase';
+import './AuthForms.css'; // Shared CSS file with signup
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -28,13 +29,18 @@ function Login() {
     e.preventDefault();
     setError('');
 
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+
     try {
       const data = await loginUser(email, password);
       console.log('User logged in:', data);
       localStorage.setItem('authToken', data.token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Login failed. Please check your credentials.');
     }
   };
 
@@ -43,65 +49,62 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="max-w-md w-full p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-        <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">Login to your account</h2>
-
+    <div className="auth-container">
+      <div className="auth-background">
+        <div className="shape shape1"></div>
+        <div className="shape shape2"></div>
+        <div className="shape shape3"></div>
+      </div>
+      
+      <div className="glass-card login-card animate-in">
+        <div className="card-header">
+          <h1>Welcome Back</h1>
+          <p>Sign in to your account</p>
+        </div>
+        
         {error && (
-          <div className="mb-4 p-3 bg-red-500 text-white text-sm rounded-md">
-            {error}
+          <div className="error-message">
+            <span>{error}</span>
           </div>
         )}
-
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
-              Email
-            </label>
+        
+        <form onSubmit={handleLogin} className="auth-form">
+          <div className="form-group">
+            <label htmlFor="email">Email Address</label>
             <input
               id="email"
               type="email"
-              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors"
+              placeholder="Enter your email"
               required
+              className="glass-input"
             />
           </div>
-
-          <div>
-            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">
-              Password
-            </label>
+          
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
-              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors"
+              placeholder="Enter your password"
               required
+              className="glass-input"
             />
           </div>
-
-          <div className="flex justify-end">
-            <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
-              Forgot password?
-            </Link>
+          
+          <div className="forgot-password">
+            <Link to="/forgot-password">Forgot password?</Link>
           </div>
-
-          <button
-            type="submit"
-            className="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-          >
-            Login
+          
+          <button type="submit" className="submit-button">
+            Sign In
           </button>
-
-          <div className="text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">
-              Sign up
-            </Link>
+          
+          <div className="auth-link">
+            Don't have an account? <Link to="/signup">Sign up</Link>
           </div>
         </form>
       </div>
