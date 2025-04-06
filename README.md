@@ -1,9 +1,20 @@
-# 🛡️ Safeguarding Stories: AI for Intellectual Property Protection
-Disney's vast library of intellectual property, including movies, TV shows, and characters, is a prime target for cyberattacks and piracy.Unauthorized access and distribution of this content can lead to significant financial losses and damage to the brand.
+# 🛡️ SecureRights.app: AI for Intellectual Property Protection
+
+Disney's vast library of intellectual property, including movies, TV shows, and characters, is a prime target for cyberattacks and piracy. Unauthorized access and distribution of this content can lead to significant financial losses and damage to the brand.
 
 <img src="https://storage.googleapis.com/vision-hack2skill-production/innovator/USER00000009/1736408607609-SafeguardingStoriesAIforIntellectualPropertyProtection.png" alt="Disney IP Protection" style="width: 100%; border-radius: 1em;">
 
 ## 🚀 Getting Started
+
+### System Requirements
+Before installation, ensure your system meets these minimum requirements:
+- **RAM**: 4GB or higher (8GB recommended)
+- **Storage**: 10GB free space
+- **CPU**: Intel i5 or equivalent (for CPU-only processing)
+- **GPU**: 4GB+ VRAM with CUDA support (for accelerated processing)
+- **Operating System**: Windows 10/11, macOS 12+, or Ubuntu 20.04+
+
+Processing on CPU-only setups will work but will be significantly time-consuming compared to GPU-accelerated systems.
 
 ### Prerequisites
 Before proceeding with the installation, ensure that you have the following dependencies installed:
@@ -32,10 +43,13 @@ Ensure that the following files and directories are properly configured:
 📂 AI
    ┣ 📂 src
    ┃ ┣ 📂 models
-   ┃ ┣ 📂 pretrained
-   ┃ ┃ ┣ 📜 coco.names
-   ┃ ┃ ┣ 📜 yolov4.cfg
-   ┃ ┃ ┗ 📜 yolov4.weights
+   ┃ ┃ ┣ 📂 pretrained
+   ┃ ┃ ┃ ┣ 📜 coco.names
+   ┃ ┃ ┃ ┣ 📜 yolov4.cfg
+   ┃ ┃ ┃ ┗ 📜 yolov4.weights
+
+   ┃ ┣📂 firebase
+   ┃ ┃ ┗ 📜 serviceAccountKey.json
 
    ┣ 📂 assets
    ┃ ┣ 📂 videos
@@ -53,12 +67,7 @@ If the video is available on YouTube, download it by navigating to:
 cd Gdg-Solution-Challenge/ai/assets/videos
 ```
 
-Then, run the following command to download the video:
-
-```bash
-yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]" -o "sample_video.mp4" "<Your video link>"
-
-```
+Then, add a reference video named "sample_video.mp4"
 
 #### 3. Backend Setup
 Navigate to the `backend` directory and install the required dependencies:
@@ -111,7 +120,7 @@ npm start
 ## 🔍 Detailed Project Overview
 
 ### System Architecture
-The Safeguarding Stories project is built on a robust, multi-component architecture designed to provide comprehensive intellectual property protection:
+The SecureRights.app project is built on a robust, multi-component architecture designed to provide comprehensive intellectual property protection:
 
 1. **Backend Service**
 - Manages data collection
@@ -212,6 +221,11 @@ If you encounter dependency conflicts:
 3. Clear npm and pip caches
 4. Reinstall dependencies
 
+### Performance Issues
+- If processing is slow, ensure GPU acceleration is properly configured
+- For systems with limited resources, reduce the batch size in the AI configuration
+- Consider using remote processing for systems that don't meet minimum requirements
+
 ## 👥 Team Members
 
 | Name | Role | Expertise | Contact |
@@ -222,9 +236,11 @@ If you encounter dependency conflicts:
 | **Rishi Srestha** | Frontend Developer & Documentation | UI implementation, documentation | [rishi@example.com](mailto:rishi@example.com) |
 
 ## 🤝 Contributing
-We welcome contributions to improve Safeguarding Stories! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute.
+We welcome contributions to improve SecureRights.app! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute.
 
 ## 📜 License
 This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for full details.
+
+Visit us at [securerights.app](https://securerights.app)
 
 *Innovative Intellectual Property Protection, Powered by AI* 🚀
