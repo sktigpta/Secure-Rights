@@ -235,8 +235,8 @@ If you encounter dependency conflicts:
 | **Saurav Kumar** | Frontend Designer & UI/UX | Interface design, user experience | [sauravkumar9447@gmail.com](mailto:sauravkumar9447@gmail.com) |
 | **Rishi Srestha** | Frontend Developer & Documentation | UI implementation, documentation | [rishi@example.com](mailto:rishi@example.com) |
 
-## 🤝 Contributing
-We welcome contributions to improve SecureRights.app! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute.
+## 🤝 Contribution
+We welcome contributions to improve SecureRights.app! Please see [CONTRIBUTION.md](CONTRIBUTION.md) for guidelines on how to contribute.
 
 ## 📜 License
 This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for full details.
