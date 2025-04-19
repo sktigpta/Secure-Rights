@@ -1,15 +1,26 @@
-opencv-python
+# Core dependencies
 numpy
 pandas
-torch
-torchvision
 tqdm
 matplotlib
 scipy
-ultralytics
 pillow
 requests
-json5
-firebase_admin
+
+# Deep learning
+torch==2.5.1+cu121
+torchvision==0.18.1+cu121
+--find-links https://download.pytorch.org/whl/cu121
+
+# Computer vision
+opencv-python
+
+# Ultralytics YOLO
+ultralytics
+
+# YouTube download and processing
 yt_dlp
-ffmpeg
+ffmpeg-python
+
+# Firebase integration
+firebase-admin
