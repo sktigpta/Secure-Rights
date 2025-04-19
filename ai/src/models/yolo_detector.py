@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 import logging
 import torch
-from tqdm import tqdm
 import concurrent.futures
+from tqdm.auto import tqdm
 
 class YOLODetector:
     def __init__(self,
@@ -287,13 +287,14 @@ class YOLODetector:
         
         # Use ThreadPoolExecutor for better thread management
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_threads) as executor:
-            future_to_index = {
+            futures = {
                 executor.submit(self._process_single_image_opencv, img): idx 
                 for idx, img in enumerate(images)
             }
             
-            for future in concurrent.futures.as_completed(future_to_index):
-                idx = future_to_index[future]
+            # No tqdm progress bar here to avoid nesting issues
+            for future in concurrent.futures.as_completed(futures):
+                idx = futures[future]
                 try:
                     result = future.result()
                     all_detections[idx] = result
@@ -359,6 +360,45 @@ class YOLODetector:
         
         return []
 
+    def extract_frames(self, video_path, skip_frames=0):
+        """
+        Extract frames from a video
+        
+        Args:
+            video_path (str): Path to input video
+            skip_frames (int): Number of frames to skip between extractions
+            
+        Returns:
+            tuple: (frames, total_frames)
+        """
+        if not os.path.exists(video_path):
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+            
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video: {video_path}")
+            
+        frames = []
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        # Use tqdm for frame extraction with position=0
+        with tqdm(total=total_frames, desc="Extracting Frames", position=0, leave=True) as pbar:
+            frame_index = 0
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                    
+                if frame_index % (skip_frames + 1) == 0:
+                    frames.append(frame)
+                    
+                frame_index += 1
+                pbar.update(1)
+                
+        cap.release()
+        logging.info(f"Extracted {len(frames)} frames from video")
+        return frames, total_frames
+
     def process_video(self, video_path, output_path=None, display=False):
         """
         Process video with GPU acceleration and batch processing
@@ -381,7 +421,11 @@ class YOLODetector:
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = cap.get(cv2.CAP_PROP_FPS)
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            cap.release()  # Release the capture object
 
+            print("Loading reference data...")
+            frames, _ = self.extract_frames(video_path)
+            
             # Video writer setup
             writer = None
             if output_path:
@@ -390,26 +434,26 @@ class YOLODetector:
 
             # Batch processing parameters - larger batch for GPU, smaller for CPU
             batch_size = 16 if self.gpu_available else 4
-            frame_batch = []
             
-            with tqdm(total=total_frames, desc="Processing Video") as pbar:
-                while True:
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
+            # Process frames in batches with a separate progress bar
+            processed_frames = 0
+            with tqdm(total=len(frames), desc="Processing Reference Frames", position=0, leave=True) as pbar:
+                for i in range(0, len(frames), batch_size):
+                    batch = frames[i:i+batch_size]
+                    detections = self.detect(batch)
+                    
+                    for frame, frame_detections in zip(batch, detections):
+                        self._draw_detections(frame, frame_detections)
+                        if writer:
+                            writer.write(frame)
+                        if display:
+                            cv2.imshow('YOLO Detection', frame)
+                            cv2.waitKey(1)
+                    
+                    batch_size_actual = len(batch)
+                    processed_frames += batch_size_actual
+                    pbar.update(batch_size_actual)
 
-                    frame_batch.append(frame)
-                    if len(frame_batch) >= batch_size:
-                        self._process_frame_batch(frame_batch, writer, display)
-                        pbar.update(len(frame_batch))
-                        frame_batch = []
-
-                # Process remaining frames
-                if frame_batch:
-                    self._process_frame_batch(frame_batch, writer, display)
-                    pbar.update(len(frame_batch))
-
-            cap.release()
             if writer:
                 writer.release()
             if display:
@@ -421,17 +465,6 @@ class YOLODetector:
         except Exception as e:
             logging.error(f"Video processing failed: {e}")
             return False
-
-    def _process_frame_batch(self, frames, writer, display):
-        """Process batch of video frames"""
-        detections = self.detect(frames)
-        for frame, frame_detections in zip(frames, detections):
-            self._draw_detections(frame, frame_detections)
-            if writer:
-                writer.write(frame)
-            if display:
-                cv2.imshow('YOLO Detection', frame)
-                cv2.waitKey(1)
 
     def _draw_detections(self, frame, detections):
         """Draw detections on frame"""

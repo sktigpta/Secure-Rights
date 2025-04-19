@@ -1,10 +1,5 @@
-import torch
+from ultralytics import YOLO
 
-print(f"PyTorch version: {torch.__version__}")
-print(f"CUDA capability: {torch.version.cuda}")
-
-
-print(f"CUDA available: {torch.cuda.is_available()}")
-if torch.cuda.is_available():
-    print(f"CUDA Device: {torch.cuda.get_device_name(0)}")
-    print(f"CUDA Version: {torch.version.cuda}")
+model = YOLO("yolov8n.pt")  # Or yolov5n.pt if using older
+results = model("your_video.mp4")  # Automatically uses GPU if available
+results[0].save("output/")

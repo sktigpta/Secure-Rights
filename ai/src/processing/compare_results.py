@@ -65,7 +65,7 @@ def compare_frames(target_frames, reference_data, yolo, threshold=0.5):
     is_copied = []
     
     # Process frames with single progress bar
-    with tqdm(total=len(target_frames), desc="Comparing Frames", unit="frame") as pbar:
+    with tqdm(total=len(target_frames), desc="Comparing Frames", unit="frame", position=1, leave=True) as pbar:
         for idx, frame_path in enumerate(target_frames):
             try:
                 # Load and process each frame

@@ -1,10 +1,10 @@
 import cv2
 import os
 import logging
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 
-def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, target_size=None):
+def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, target_size=None, position=0):
     """
     Extracts frames from video with optimized memory management and error handling
     
@@ -13,6 +13,7 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, targe
         output_dir (str): Directory to save extracted frames
         frame_interval (int): Extract every Nth frame
         target_size (tuple): Optional (width, height) to resize frames
+        position (int): Position for the progress bar (to avoid nesting)
         
     Returns:
         list: Paths to extracted frame images
@@ -23,7 +24,6 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, targe
         
         # Open video capture
         cap = cv2.VideoCapture(video_path)
-        frames = []
         
         if not cap.isOpened():
             raise ValueError(f"Failed to open video: {video_path}")
@@ -31,6 +31,12 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, targe
         # Get video properties
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         base_name = os.path.splitext(os.path.basename(video_path))[0]
+        
+        # Validate frame interval
+        frame_interval = max(1, frame_interval)  # Ensure at least 1
+        
+        # Calculate expected number of frames to save (for progress bar)
+        expected_saved_frames = total_frames // frame_interval + (1 if total_frames % frame_interval > 0 else 0)
 
         # Validate target size format
         if target_size and not (isinstance(target_size, tuple) and len(target_size) == 2):
@@ -38,7 +44,8 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, targe
             target_size = None
 
         # Process frames with progress tracking
-        with tqdm(total=total_frames, desc="Extracting Frames", unit="frame") as pbar:
+        frames = []
+        with tqdm(total=total_frames, desc="Extracting Frames", unit="frame", position=position, leave=True) as pbar:
             frame_count = 0
             frame_saved_count = 0
             
@@ -72,9 +79,8 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, targe
                             frames.append(frame_path)
                             frame_saved_count += 1
                             
-                            # Update progress
-                            if frame_saved_count % 10 == 0:
-                                pbar.set_postfix({"Saved": frame_saved_count})
+                            # Update progress bar postfix with saved count
+                            pbar.set_postfix({"Saved": frame_saved_count})
                         else:
                             logging.error(f"Failed to save frame {frame_count}")
                         
@@ -102,6 +108,10 @@ def extract_frames(video_path, output_dir="temp_frames", frame_interval=1, targe
 
     except Exception as e:
         logging.error(f"Frame extraction failed: {str(e)}")
-        if 'cap' in locals() and cap is not None and cap.isOpened():
-            cap.release()
+        if 'cap' in locals() and cap is not None:
+            try:
+                if cap.isOpened():
+                    cap.release()
+            except:
+                pass
         raise
