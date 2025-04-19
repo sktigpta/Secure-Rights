@@ -241,13 +241,8 @@ class YOLODetector:
         if not isinstance(images, list):
             images = [images]
             
-        # Always use OpenCV implementation since we're skipping ultralytics
+        # Process images using the OpenCV implementation
         return self._detect_opencv(images)
-
-    def _detect_ultralytics(self, images):
-        """Detect objects using ultralytics implementation"""
-        # This function is kept for compatibility
-        raise NotImplementedError("Ultralytics implementation not initialized")
 
     def _detect_opencv(self, images):
         """Detect objects using OpenCV DNN implementation"""
@@ -255,54 +250,42 @@ class YOLODetector:
             # For single image, just process directly
             return [self._process_single_image_opencv(images[0])]
         else:
-            # For multiple images, use multi-threading
-            return self._process_multi_images_opencv(images)
+            # For multiple images, process sequentially to avoid issues
+            results = []
+            for image in images:
+                results.append(self._process_single_image_opencv(image))
+            return results
     
     def _process_single_image_opencv(self, image):
         """Process a single image for detection using OpenCV DNN"""
         try:
+            # Create a copy of the image to prevent memory issues
+            image_copy = image.copy()
+            
             # Preprocess image
             blob = cv2.dnn.blobFromImage(
-                image, 
+                image_copy, 
                 1/255.0, 
                 (self.input_size, self.input_size), 
                 swapRB=True, 
                 crop=False
             )
             
+            # Create a new detector for each image to avoid GPU memory issues
+            if self.legacy_model is None:
+                self._init_opencv_yolo()
+                
             # Set input and perform detection
             self.legacy_model.setInput(blob)
             detections = self.legacy_model.forward(self.output_layers)
             
             # Process detections
-            return self._process_opencv_detections(detections, image.shape)
+            return self._process_opencv_detections(detections, image_copy.shape)
         
         except Exception as e:
             logging.error(f"OpenCV detection failed for image: {e}")
             return []
     
-    def _process_multi_images_opencv(self, images):
-        """Process multiple images using thread pool with OpenCV DNN"""
-        all_detections = [[] for _ in range(len(images))]
-        
-        # Use ThreadPoolExecutor for better thread management
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_threads) as executor:
-            futures = {
-                executor.submit(self._process_single_image_opencv, img): idx 
-                for idx, img in enumerate(images)
-            }
-            
-            # No tqdm progress bar here to avoid nesting issues
-            for future in concurrent.futures.as_completed(futures):
-                idx = futures[future]
-                try:
-                    result = future.result()
-                    all_detections[idx] = result
-                except Exception as e:
-                    logging.error(f"Image processing failed: {e}")
-        
-        return all_detections
-
     def _process_opencv_detections(self, detections, image_shape):
         """
         Process raw OpenCV DNN detections
@@ -333,7 +316,7 @@ class YOLODetector:
                     y = int(center_y - h / 2)
                     
                     results.append({
-                        'class': self.classes[class_id],
+                        'class': self.classes[class_id] if class_id < len(self.classes) else "unknown",
                         'confidence': float(confidence),
                         'box': [x, y, w, h]
                     })
@@ -343,20 +326,30 @@ class YOLODetector:
             boxes = [det['box'] for det in results]
             confidences = [det['confidence'] for det in results]
             
-            indices = cv2.dnn.NMSBoxes(
-                boxes, 
-                confidences, 
-                self.conf_threshold, 
-                self.iou_threshold
-            )
-            
-            # Handle OpenCV 4.x vs 3.x differences in NMSBoxes return format
-            if len(indices) > 0 and isinstance(indices, tuple):
-                indices = indices[0]
-            elif len(indices) > 0 and isinstance(indices, np.ndarray):
-                indices = indices.flatten()
+            # Handle potential empty list or other NMS issues
+            try:
+                indices = cv2.dnn.NMSBoxes(
+                    boxes, 
+                    confidences, 
+                    self.conf_threshold, 
+                    self.iou_threshold
+                )
                 
-            return [results[i] for i in indices]
+                # Handle OpenCV 4.x vs 3.x differences in NMSBoxes return format
+                if len(indices) > 0:
+                    if isinstance(indices, tuple):
+                        indices = indices[0]
+                    elif isinstance(indices, np.ndarray):
+                        indices = indices.flatten()
+                        
+                    # Filter results based on NMS indices
+                    return [results[i] for i in indices]
+                
+            except Exception as e:
+                logging.error(f"NMS processing error: {e}")
+                # If NMS fails, return top confidence results
+                results.sort(key=lambda x: x['confidence'], reverse=True)
+                return results[:10]  # Return top 10 detections
         
         return []
 
@@ -396,12 +389,12 @@ class YOLODetector:
                 pbar.update(1)
                 
         cap.release()
-        logging.info(f"Extracted {len(frames)} frames from video")
+        logging.info(f"Successfully extracted {len(frames)} frames from {video_path}")
         return frames, total_frames
 
     def process_video(self, video_path, output_path=None, display=False):
         """
-        Process video with GPU acceleration and batch processing
+        Process video with object detection
         
         Args:
             video_path (str): Path to input video
@@ -424,7 +417,7 @@ class YOLODetector:
             cap.release()  # Release the capture object
 
             print("Loading reference data...")
-            frames, _ = self.extract_frames(video_path)
+            frames, _ = self.extract_frames(video_path, skip_frames=7)
             
             # Video writer setup
             writer = None
@@ -432,27 +425,24 @@ class YOLODetector:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
-            # Batch processing parameters - larger batch for GPU, smaller for CPU
-            batch_size = 16 if self.gpu_available else 4
-            
-            # Process frames in batches with a separate progress bar
-            processed_frames = 0
+            # Process frames sequentially to avoid memory issues
             with tqdm(total=len(frames), desc="Processing Reference Frames", position=0, leave=True) as pbar:
-                for i in range(0, len(frames), batch_size):
-                    batch = frames[i:i+batch_size]
-                    detections = self.detect(batch)
+                for i, frame in enumerate(frames):
+                    # Process one frame at a time
+                    detections = self.detect(frame)[0]
                     
-                    for frame, frame_detections in zip(batch, detections):
-                        self._draw_detections(frame, frame_detections)
-                        if writer:
-                            writer.write(frame)
-                        if display:
-                            cv2.imshow('YOLO Detection', frame)
-                            cv2.waitKey(1)
+                    # Draw detections on frame
+                    self._draw_detections(frame, detections)
                     
-                    batch_size_actual = len(batch)
-                    processed_frames += batch_size_actual
-                    pbar.update(batch_size_actual)
+                    # Write or display frame
+                    if writer:
+                        writer.write(frame)
+                    if display:
+                        cv2.imshow('YOLO Detection', frame)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
+                    
+                    pbar.update(1)
 
             if writer:
                 writer.release()
