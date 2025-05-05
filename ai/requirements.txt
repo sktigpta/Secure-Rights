@@ -1,8 +1,6 @@
 opencv-python
 numpy
 pandas
-torch
-torchvision
 tqdm
 matplotlib
 scipy
@@ -13,3 +11,5 @@ json5
 firebase_admin
 yt_dlp
 ffmpeg
+
+torch torchvision --index-url https://download.pytorch.org/whl/cu121  --timeout 1000
