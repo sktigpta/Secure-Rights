@@ -7,6 +7,10 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./components/Dashboard";
 import NotFound from "./components/NotFound";
 import Home from "./components/Home";
+import DMCAReport from "./components/DMCAReport";
+import DMCAStatus from "./components/DMCAStatus";
+import NoticeList from "./components/NoticeList";
+import NoticeReview from "./components/NoticeReview";
 
 function App() {
   return (
@@ -21,6 +25,38 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dmca/report"
+          element={
+            <ProtectedRoute>
+              <DMCAReport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dmca/status/:reportId"
+          element={
+            <ProtectedRoute>
+              <DMCAStatus />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dmca/notices"
+          element={
+            <ProtectedRoute>
+              <NoticeList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dmca/notice/:noticeId"
+          element={
+            <ProtectedRoute>
+              <NoticeReview />
             </ProtectedRoute>
           }
         />
