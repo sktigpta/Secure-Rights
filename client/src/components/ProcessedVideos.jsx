@@ -1,9 +1,11 @@
 "use client"
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import { ChevronUp, ChevronDown, FileText } from "lucide-react"
 
 const ProcessedVideos = ({ onNotification }) => {
+  const navigate = useNavigate();
   const [videos, setVideos] = useState([])
   const [videoData, setVideoData] = useState({})
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -17,8 +19,17 @@ const ProcessedVideos = ({ onNotification }) => {
   }
 
   const handleDMCA = (videoId, title) => {
-    onNotification(`Generating DMCA for "${title}"`, "success")
-    // Implement DMCA generation functionality
+    // Navigate to DMCA report page with pre-filled data
+    navigate('/dmca/report', {
+      state: {
+        videoData: {
+          videoId,
+          videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+          title,
+          description: `This video has been identified as containing potentially infringing content with a copy percentage of ${videos.find(v => v.videoId === videoId)?.copyPercentage || 0}%.`
+        }
+      }
+    });
   }
 
   useEffect(() => {

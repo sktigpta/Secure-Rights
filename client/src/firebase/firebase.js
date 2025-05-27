@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // Firebase config for your frontend app (replace with actual Firebase web config)
 const firebaseConfig = {
@@ -15,5 +15,11 @@ const firebaseConfig = {
 // Initialize Firebase app with the frontend config
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// Set persistence to LOCAL (this will keep the user signed in even after page refresh)
+setPersistence(auth, browserLocalPersistence)
+  .catch((error) => {
+    console.error("Auth persistence error:", error);
+  });
 
 export { auth };

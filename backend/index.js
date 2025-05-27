@@ -1,9 +1,17 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
 
 // Import Firebase config
 require("./config/firebase.js");
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 // Import Routes
 const youtubeRoutes = require("./routes/youtubeRoutes.js");
@@ -14,7 +22,7 @@ const dmcaRoutes = require("./routes/dmcaRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
 
 const app = express();
-
+console.log(process.env.FRONTEND_PORT)
 // CORS Configuration
 const allowedOrigins = [
   `http://localhost:${process.env.FRONTEND_PORT}`,
@@ -30,11 +38,14 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: "GET,POST,DELETE",
+    methods: "GET,POST,DELETE,PATCH",
     allowedHeaders: "Content-Type,Authorization",
     credentials: true,
   })
 );
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(express.json());
 
