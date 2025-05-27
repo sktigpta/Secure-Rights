@@ -56,6 +56,15 @@ const Dashboard = ({ token }) => {
         <nav>
           <ul className="flex gap-1 md:gap-2 items-center">
             <li className="hidden md:inline-block">
+              <Link
+                to="/dmca/notices"
+                className="px-2 md:px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer flex items-center gap-1"
+              >
+                <Shield className="h-4 w-4" />
+                DMCA Notices
+              </Link>
+            </li>
+            <li className="hidden md:inline-block">
               <a
                 className="px-2 md:px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-sm font-medium cursor-pointer"
                 href="https://docs.google.com/forms/d/e/1FAIpQLSdZEqtUaM02fIbDwkcbhHuN-CSexYL9dswws5Jhm_DnPb7OPA/viewform?usp=sf_link"
