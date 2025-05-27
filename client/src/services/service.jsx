@@ -2,7 +2,6 @@ import axios from 'axios';
 import { auth } from '../firebase/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-
 const API_URL = `${import.meta.env.VITE_API_URL}/auth`;
 
 // Helper function for handling auth errors
@@ -13,6 +12,22 @@ const handleAuthError = (error, defaultMessage) => {
     message: errorMessage,
     requiresLogout: error.response?.status === 401
   });
+};
+
+// Function to refresh token
+const refreshToken = async () => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const newToken = await user.getIdToken(true); // Force refresh
+      localStorage.setItem('authToken', newToken);
+      return newToken;
+    }
+    return null;
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    return null;
+  }
 };
 
 export const registerUser = async (email, password, name) => {
@@ -37,8 +52,12 @@ export const loginUser = async (email, password) => {
 
 export const getUserDetails = async (token) => {
   try {
+    // Try to refresh token before making the request
+    const newToken = await refreshToken();
+    const tokenToUse = newToken || token;
+
     const response = await axios.get(`${API_URL}/me`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${tokenToUse}` }
     });
     return response.data;
   } catch (error) {

@@ -7,6 +7,7 @@ const knownChannelsCollection = db.collection("known_channels");
 const getPermittedVideos = async (req, res) => {
   try {
     const snapshot = await permittedVideosCollection.get();
+
     if (snapshot.empty) {
       return res.status(404).json({ message: "No permitted videos found" });
     }
