@@ -26,6 +26,7 @@ function NoticeReview() {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
       });
+      console.log("this is data",response.data);
       setNotice(response.data);
       setStatus(response.data.status);
       setAdminNotes(response.data.adminNotes || '');
@@ -127,14 +128,14 @@ function NoticeReview() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="p-4 bg-white/5 rounded-lg">
                 <h3 className="text-white/80 text-sm font-medium mb-2">Report Information</h3>
-                <p className="text-white">Report ID: {notice.reportId}</p>
-                <p className="text-white">Video ID: {notice.videoId}</p>
+                <p className="text-white"><strong>Report ID:</strong> {notice.id}</p>
+                <p className="text-white"><strong>Video ID:</strong> {notice.videoId}</p>
               </div>
 
               <div className="p-4 bg-white/5 rounded-lg">
                 <h3 className="text-white/80 text-sm font-medium mb-2">Timeline</h3>
-                <p className="text-white">Created: {new Date(notice.createdAt).toLocaleString()}</p>
-                <p className="text-white">Last Updated: {new Date(notice.updatedAt).toLocaleString()}</p>
+                <p className="text-white"><strong>Created:</strong> {new Date(notice.createdAt._seconds * 1000).toLocaleString()}</p>
+                <p className="text-white"><strong>Last Updated:</strong> {new Date(notice.updatedAt._seconds * 1000).toLocaleString()}</p>
               </div>
             </div>
 

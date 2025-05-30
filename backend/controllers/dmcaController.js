@@ -134,7 +134,6 @@ exports.getReportStatus = async (req, res) => {
 
     res.json(report.data());
   } catch (error) {
-    console.error('Error fetching report status:', error);
     res.status(500).json({ error: 'Failed to fetch report status' });
   }
 };
@@ -175,7 +174,6 @@ exports.submitNotice = async (req, res) => {
 
     // Generate DMCA notice content
     const noticeContent = generateDMCANotice(reportData);
-
     // Create notice document
     const noticeRef = await db.collection('dmca_reports').add({
       reportId,
@@ -196,7 +194,6 @@ exports.submitNotice = async (req, res) => {
       noticeId: noticeRef.id
     });
   } catch (error) {
-    console.error('Error submitting DMCA notice:', error);
     res.status(500).json({ error: 'Failed to submit DMCA notice' });
   }
 };

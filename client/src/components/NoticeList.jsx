@@ -160,10 +160,10 @@ function NoticeList() {
                           <span className="ml-2 capitalize">{notice.status}</span>
                         </div>
                       </td>
-                      <td className="py-4">{notice.reportId}</td>
+                      <td className="py-4">{notice.id}</td>
                       <td className="py-4">{notice.videoId}</td>
-                      <td className="py-4">{new Date(notice.createdAt).toLocaleString()}</td>
-                      <td className="py-4">{new Date(notice.updatedAt).toLocaleString()}</td>
+                      <td className="py-4">{new Date(notice.createdAt._seconds * 1000).toLocaleString()}</td>
+                      <td className="py-4">{new Date(notice.updatedAt._seconds * 1000).toLocaleString()}</td>
                       <td className="py-4">
                         <button
                           onClick={() => navigate(`/dmca/notice/${notice.id}`)}
