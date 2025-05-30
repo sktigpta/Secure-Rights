@@ -13,7 +13,7 @@ function DMCAStatus() {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const response = await axios.get(`/api/dmca/report/${reportId}`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/dmca/report/${reportId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -109,21 +109,21 @@ function DMCAStatus() {
                 <span className="ml-3 text-white">{getStatusText(report.status)}</span>
               </div>
               <div className="text-white/70 text-sm">
-                Report ID: {reportId}
+                <strong>Report ID:  </strong> {reportId}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="p-4 bg-white/5 rounded-lg">
                 <h3 className="text-white/80 text-sm font-medium mb-2">Video Information</h3>
-                <p className="text-white">URL: {report.videoUrl}</p>
-                <p className="text-white">ID: {report.videoId}</p>
+                <p className="text-white"><strong>URL:</strong> {report.videoUrl}</p>
+                <p className="text-white"><strong>ID:</strong> {report.videoId}</p>
               </div>
 
               <div className="p-4 bg-white/5 rounded-lg">
                 <h3 className="text-white/80 text-sm font-medium mb-2">Timeline</h3>
-                <p className="text-white">Created: {new Date(report.createdAt).toLocaleString()}</p>
-                <p className="text-white">Last Updated: {new Date(report.updatedAt).toLocaleString()}</p>
+                <p className="text-white"><strong>Created:</strong> {new Date(report.createdAt._seconds * 1000).toLocaleString()}</p>
+                <p className="text-white"><strong>Last Updated: </strong>  {new Date(report.updatedAt._seconds * 10000).toLocaleString()}</p>
               </div>
             </div>
 
