@@ -60,6 +60,10 @@ app.use("/api/auth", authRoutes);  // Authentication routes
 // Export the app for Vercel's serverless functions
 // module.exports = app;
 
-app.listen(5000, () => {
-  console.log("server started");
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(5000, () => {
+    console.log("Server running locally on http://localhost:5000");
+  });
+} else {
+  module.exports = app;
+}
