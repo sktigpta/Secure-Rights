@@ -89,8 +89,8 @@ function DMCAReport() {
       for (let pair of formDataToSend.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       }
-
-      const response = await axios.post('http://localhost:5000/api/dmca/report', formDataToSend, {
+ const API_URL = import.meta.env.VITE_API_URL
+      const response = await axios.post(`${API_URL}/dmca/report`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`
@@ -107,8 +107,7 @@ function DMCAReport() {
       console.error('DMCA submission error:', err);
       if (err.response?.status === 401) {
         setError('Your session has expired. Please log in again.');
-        // Optionally redirect to login page
-        // navigate('/login');
+       
       } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.data?.details) {
