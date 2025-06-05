@@ -44,6 +44,10 @@ const ProcessedVideos = ({ onNotification }) => {
     setSelectedVideo(null)
   }
 
+  const openVideoInYoutube = (videoId) => {
+    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank')
+  }
+
   // Convert timestamp string to seconds for timeline calculations
   const timeToSeconds = (timeStr) => {
     const parts = timeStr.split(':').map(Number)
@@ -228,206 +232,223 @@ const ProcessedVideos = ({ onNotification }) => {
 
       {/* Enhanced Details Modal */}
       {showDetails && selectedVideo && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-white/20">
+        <div className="fixed inset-0 bg-black/25 backdrop-blur-sm flex items-center justify-center z-50 p-3">
+          <div className="bg-white/95 backdrop-blur-md rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl border border-white/20">
             {/* Header */}
-            <div className="p-6 border-b border-gray-200/50 bg-white/50 backdrop-blur-sm">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Video Analysis Report</h2>
-                  <p className="text-gray-600 max-w-2xl line-clamp-2">{videoData[selectedVideo.videoId]?.title || "Untitled Video"}</p>
+            <div className="px-4 py-3 border-b border-gray-200/50 bg-white/80 backdrop-blur-sm">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-800">Video Analysis Report</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDMCA(selectedVideo.videoId, videoData[selectedVideo.videoId]?.title)}
+                    className="flex items-center gap-1.5 bg-blue-600 text-white py-1.5 px-3 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    <FileText size={14} />
+                    <span>Generate DMCA</span>
+                  </button>
+                  <button
+                    onClick={closeDetails}
+                    className="p-1.5 hover:bg-gray-100/50 rounded-full transition-all duration-200"
+                  >
+                    <X size={20} className="text-gray-500" />
+                  </button>
                 </div>
-                <button
-                  onClick={closeDetails}
-                  className="p-2 hover:bg-gray-100/50 rounded-full transition-all duration-200 ml-4"
-                >
-                  <X size={24} className="text-gray-500" />
-                </button>
               </div>
             </div>
             
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              {/* Video Info Section */}
-              <div className="mb-8">
-                <div className="flex gap-6">
-                  {/* Large Thumbnail */}
-                  <div className="flex-shrink-0">
+            <div className="p-4 overflow-y-auto max-h-[calc(85vh-80px)]">
+              {/* Main Content Layout */}
+              <div className="flex gap-4">
+                {/* Left Section - Thumbnail and Video Info */}
+                <div className="w-80 flex-shrink-0">
+                  {/* Clickable Thumbnail */}
+                  <div 
+                    className="relative mb-3 cursor-pointer group"
+                    onClick={() => openVideoInYoutube(selectedVideo.videoId)}
+                  >
                     <img 
                       src={`https://img.youtube.com/vi/${selectedVideo.videoId}/maxresdefault.jpg`} 
                       alt={videoData[selectedVideo.videoId]?.title || "No title available"} 
-                      className="w-80 h-45 object-cover rounded-xl shadow-lg border border-gray-200/50" 
+                      className="w-full h-44 object-cover rounded-lg shadow-md border border-gray-200/50 group-hover:shadow-lg transition-all duration-300" 
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="bg-red-600 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                        Watch on YouTube
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Video Details */}
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-3 leading-tight">
-                        {videoData[selectedVideo.videoId]?.title || "Untitled Video"}
-                      </h3>
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">
+                      {videoData[selectedVideo.videoId]?.title || "Untitled Video"}
+                    </h3>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 p-2 bg-gray-50/70 rounded-md">
+                        <User className="text-gray-500" size={14} />
+                        <div>
+                          <p className="text-xs text-gray-500">Channel</p>
+                          <p className="text-sm font-medium text-gray-800">{videoData[selectedVideo.videoId]?.author || "Unknown"}</p>
+                        </div>
+                      </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-lg">
-                          <User className="text-gray-500" size={18} />
-                          <div>
-                            <p className="text-sm text-gray-500">Channel</p>
-                            <p className="font-medium text-gray-800">{videoData[selectedVideo.videoId]?.author || "Unknown"}</p>
-                          </div>
+                      <div className="flex items-center gap-2 p-2 bg-gray-50/70 rounded-md">
+                        <Video className="text-gray-500" size={14} />
+                        <div>
+                          <p className="text-xs text-gray-500">Video ID</p>
+                          <p className="font-mono text-xs text-gray-800">{selectedVideo.videoId}</p>
                         </div>
-                        
-                        <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-lg">
-                          <Video className="text-gray-500" size={18} />
-                          <div>
-                            <p className="text-sm text-gray-500">Video ID</p>
-                            <p className="font-mono text-sm text-gray-800">{selectedVideo.videoId}</p>
-                          </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 p-2 bg-gray-50/70 rounded-md">
+                        <Calendar className="text-gray-500" size={14} />
+                        <div>
+                          <p className="text-xs text-gray-500">Processed</p>
+                          <p className="text-sm font-medium text-gray-800">{formatFirebaseTimestamp(selectedVideo.processedAt)}</p>
                         </div>
-                        
-                        <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-lg">
-                          <Calendar className="text-gray-500" size={18} />
-                          <div>
-                            <p className="text-sm text-gray-500">Processed</p>
-                            <p className="font-medium text-gray-800">{formatFirebaseTimestamp(selectedVideo.processedAt)}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-lg">
-                          <div className={`w-4 h-4 rounded-full ${selectedVideo.copied ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                          <div>
-                            <p className="text-sm text-gray-500">Status</p>
-                            <p className={`font-medium ${selectedVideo.copied ? 'text-red-600' : 'text-green-600'}`}>
-                              {selectedVideo.copied ? "Copyright Issues Found" : "Clean Content"}
-                            </p>
-                          </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 p-2 bg-gray-50/70 rounded-md">
+                        <div className={`w-3 h-3 rounded-full ${selectedVideo.copied ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <div>
+                          <p className="text-xs text-gray-500">Status</p>
+                          <p className={`text-sm font-medium ${selectedVideo.copied ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedVideo.copied ? "Copyright Issues Found" : "Clean Content"}
+                          </p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Copyright Analysis */}
-              <div className="mb-8">
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">Copyright Analysis</h4>
-                
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 p-6 rounded-xl border border-gray-200/50">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-lg font-medium text-gray-700">Copy Percentage</span>
-                    <span className={`text-3xl font-bold ${
-                      selectedVideo.copyPercentage > 70 ? "text-red-500" : 
-                      selectedVideo.copyPercentage > 30 ? "text-amber-500" : "text-green-500"
-                    }`}>
-                      {selectedVideo.copyPercentage?.toFixed(1)}%
-                    </span>
-                  </div>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-                    <div 
-                      className={`h-4 rounded-full transition-all duration-500 ${
-                        selectedVideo.copyPercentage > 70 ? "bg-gradient-to-r from-red-500 to-red-600" : 
-                        selectedVideo.copyPercentage > 30 ? "bg-gradient-to-r from-amber-500 to-amber-600" : 
-                        "bg-gradient-to-r from-green-500 to-green-600"
-                      }`}
-                      style={{ width: `${Math.min(selectedVideo.copyPercentage, 100)}%` }}
-                    ></div>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>0%</span>
-                    <span>Low Risk</span>
-                    <span>Medium Risk</span>
-                    <span>High Risk</span>
-                    <span>100%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline Analysis */}
-              <div>
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">Timeline Analysis</h4>
-                
-                <div className="mb-6">
-                  <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-3 bg-gradient-to-r from-green-500 to-green-600 rounded-sm"></div>
-                      <span>Original Content</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-3 bg-gradient-to-r from-red-500 to-red-600 rounded-sm"></div>
-                      <span>Copied Content</span>
-                    </div>
-                  </div>
-                  
-                  {/* Enhanced Timeline Bar */}
-                  <div className="relative mb-3">
-                    <div className="w-full h-12 bg-gray-200 rounded-xl overflow-hidden relative border border-gray-300/50">
-                      {generateTimeline(selectedVideo.timestamps, selectedVideo.totalDuration || 300).map((segment, index) => (
-                        <div
-                          key={index}
-                          className={`absolute top-0 h-full transition-all duration-500 cursor-pointer ${
-                            segment.copied ? 
-                            'bg-gradient-to-b from-red-400 to-red-600 hover:from-red-500 hover:to-red-700' : 
-                            'bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700'
+                {/* Right Section - Copyright Analysis */}
+                <div className="flex-1 space-y-4">
+                  {/* Copyright Analysis */}
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-800 mb-3">Copyright Analysis</h4>
+                    
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 p-4 rounded-lg border border-gray-200/50">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm font-medium text-gray-700">Copy Percentage</span>
+                        <span className={`text-2xl font-bold ${
+                          selectedVideo.copyPercentage > 70 ? "text-green-500" : 
+                          selectedVideo.copyPercentage > 30 ? "text-amber-500" : "text-red-500"
+                        }`}>
+                          {selectedVideo.copyPercentage?.toFixed(1)}%
+                        </span>
+                      </div>
+                      
+                      <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+                        <div 
+                          className={`h-3 rounded-full transition-all duration-500 ${
+                            selectedVideo.copyPercentage > 70 ? "bg-gradient-to-r from-green-500 to-green-600" : 
+                            selectedVideo.copyPercentage > 30 ? "bg-gradient-to-r from-amber-500 to-amber-600" : 
+                            "bg-gradient-to-r from-red-500 to-red-600"
                           }`}
-                          style={{
-                            left: `${(segment.start / (selectedVideo.totalDuration || 300)) * 100}%`,
-                            width: `${(segment.duration / (selectedVideo.totalDuration || 300)) * 100}%`
-                          }}
-                          title={`${secondsToTime(segment.start)} - ${secondsToTime(segment.end)}: ${segment.copied ? 'Copied Content' : 'Original Content'}`}
+                          style={{ width: `${Math.min(selectedVideo.copyPercentage, 100)}%` }}
                         ></div>
-                      ))}
+                      </div>
+                      
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>0%</span>
+                        <span>Clean</span>
+                        <span>Medium Risk</span>
+                        <span>High Risk</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Timeline Analysis */}
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-800 mb-3">Timeline Analysis</h4>
+                    
+                    <div className="mb-4">
+                      <div className="flex items-center gap-4 text-xs text-gray-600 mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-2 bg-gradient-to-r from-red-500 to-red-600 rounded-sm"></div>
+                          <span>Original Content</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-2 bg-gradient-to-r from-green-500 to-green-600 rounded-sm"></div>
+                          <span>Copied Content</span>
+                        </div>
+                      </div>
+                      
+                      {/* Enhanced Timeline Bar */}
+                      <div className="relative mb-2">
+                        <div className="w-full h-8 bg-gray-200 rounded-lg overflow-hidden relative border border-gray-300/50">
+                          {generateTimeline(selectedVideo.timestamps, selectedVideo.totalDuration || 300).map((segment, index) => (
+                            <div
+                              key={index}
+                              className={`absolute top-0 h-full transition-all duration-500 cursor-pointer ${
+                                segment.copied ? 
+                                'bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700' : 
+                                'bg-gradient-to-b from-red-400 to-red-600 hover:from-red-500 hover:to-red-700'
+                              }`}
+                              style={{
+                                left: `${(segment.start / (selectedVideo.totalDuration || 300)) * 100}%`,
+                                width: `${(segment.duration / (selectedVideo.totalDuration || 300)) * 100}%`
+                              }}
+                              title={`${secondsToTime(segment.start)} - ${secondsToTime(segment.end)}: ${segment.copied ? 'Copied Content' : 'Original Content'}`}
+                            ></div>
+                          ))}
+                        </div>
+                        
+                        {/* Time markers */}
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>0:00</span>
+                          <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.25))}</span>
+                          <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.5))}</span>
+                          <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.75))}</span>
+                          <span>{secondsToTime(selectedVideo.totalDuration || 300)}</span>
+                        </div>
+                      </div>
                     </div>
                     
-                    {/* Time markers */}
-                    <div className="flex justify-between text-sm text-gray-500 mt-2">
-                      <span>0:00</span>
-                      <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.25))}</span>
-                      <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.5))}</span>
-                      <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.75))}</span>
-                      <span>{secondsToTime(selectedVideo.totalDuration || 300)}</span>
-                    </div>
+                    {/* Detailed timestamps */}
+                    {selectedVideo.timestamps && selectedVideo.timestamps.length > 0 ? (
+                      <div className="bg-green-50/50 rounded-lg p-4 border border-green-200/50">
+                        <h5 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          Copyright Violations Detected ({selectedVideo.timestamps.length})
+                        </h5>
+                        <div className="grid gap-2 max-h-48 overflow-y-auto">
+                          {selectedVideo.timestamps.map((timestamp, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-white/80 border border-green-200/50 rounded-md hover:bg-white/90 transition-all duration-200">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                                  {index + 1}
+                                </div>
+                                <span className="text-sm font-medium text-gray-800">
+                                  Violation {index + 1}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-700 font-mono bg-gray-100 px-2 py-1 rounded-full">
+                                {timestamp.start} - {timestamp.end}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-red-50/50 rounded-lg border border-red-200/50">
+                        <div className="w-full h-8 bg-gradient-to-r from-red-500 to-red-600 rounded-lg mb-4"></div>
+                        <div className="flex justify-between text-xs text-gray-500 mb-4">
+                          <span>0:00</span>
+                          <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.25))}</span>
+                          <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.5))}</span>
+                          <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.75))}</span>
+                          <span>{secondsToTime(selectedVideo.totalDuration || 300)}</span>
+                        </div>
+                        <div className="text-red-600 font-medium text-base mb-1">✓ Clean Content</div>
+                        <p className="text-gray-600 text-sm">No copyright violations detected in this video</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                {/* Detailed timestamps */}
-                {selectedVideo.timestamps && selectedVideo.timestamps.length > 0 ? (
-                  <div className="bg-red-50/50 rounded-xl p-6 border border-red-200/50">
-                    <h5 className="font-semibold text-red-800 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      Copyright Violations Detected ({selectedVideo.timestamps.length})
-                    </h5>
-                    <div className="grid gap-3 max-h-64 overflow-y-auto">
-                      {selectedVideo.timestamps.map((timestamp, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 bg-white/80 border border-red-200/50 rounded-lg hover:bg-white/90 transition-all duration-200">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                              {index + 1}
-                            </div>
-                            <span className="font-medium text-gray-800">
-                              Violation Segment {index + 1}
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-700 font-mono bg-gray-100 px-3 py-1 rounded-full">
-                            {timestamp.start} - {timestamp.end}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-green-50/50 rounded-xl border border-green-200/50">
-                    <div className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl mb-6"></div>
-                    <div className="flex justify-between text-sm text-gray-500 mb-6">
-                      <span>0:00</span>
-                      <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.25))}</span>
-                      <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.5))}</span>
-                      <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.75))}</span>
-                      <span>{secondsToTime(selectedVideo.totalDuration || 300)}</span>
-                    </div>
-                    <div className="text-green-600 font-medium text-lg mb-2">✓ Clean Content</div>
-                    <p className="text-gray-600">No copyright violations detected in this video</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
