@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import logging
 import torch
-import concurrent.futures
+import gc
 from tqdm.auto import tqdm
 
 class YOLODetector:
@@ -18,18 +18,7 @@ class YOLODetector:
                  use_gpu=True,
                  num_threads=4):
         """
-        Initialize YOLO Detector with OpenCV fallback for YOLOv4
-        
-        Args:
-            model_path (str): Path to PyTorch YOLO model (can be None)
-            legacy_cfg (str): Path to YOLOv4 config
-            legacy_weights (str): Path to YOLOv4 weights
-            legacy_names (str): Path to class names file
-            input_size (int): Input size for the model
-            conf_threshold (float): Confidence threshold for detections
-            iou_threshold (float): IoU threshold for NMS
-            use_gpu (bool): Whether to use GPU acceleration
-            num_threads (int): Number of threads for parallel processing
+        Initialize YOLO Detector with improved GPU handling
         """
         # Configure logging
         logging.basicConfig(level=logging.INFO, 
@@ -52,7 +41,10 @@ class YOLODetector:
         self.classes = []
         self.device = 'cpu'
         self.gpu_available = False
-        self.using_ultralytics = False  # We'll start with OpenCV implementation
+        self.using_ultralytics = False
+        
+        # Run comprehensive GPU diagnostics first
+        self._run_gpu_diagnostics()
         
         try:
             # Skip ultralytics init if model_path is None
@@ -67,12 +59,104 @@ class YOLODetector:
             self._diagnostic_checks()
             raise
 
+    def _run_gpu_diagnostics(self):
+        """Comprehensive GPU diagnostics to identify issues"""
+        print("\n" + "="*50)
+        print("GPU DIAGNOSTICS")
+        print("="*50)
+        
+        # 1. Check PyTorch CUDA availability
+        print(f"PyTorch version: {torch.__version__}")
+        print(f"CUDA available in PyTorch: {torch.cuda.is_available()}")
+        
+        if torch.cuda.is_available():
+            print(f"CUDA device count: {torch.cuda.device_count()}")
+            print(f"Current CUDA device: {torch.cuda.current_device()}")
+            print(f"Device name: {torch.cuda.get_device_name(0)}")
+            print(f"CUDA version: {torch.version.cuda}")
+            print(f"cuDNN version: {torch.backends.cudnn.version()}")
+            
+            # Test GPU memory
+            try:
+                device = torch.device('cuda')
+                test_tensor = torch.randn(100, 100).to(device)
+                print(f"GPU memory test: PASSED")
+                print(f"GPU memory allocated: {torch.cuda.memory_allocated()/1024**2:.1f} MB")
+                print(f"GPU memory cached: {torch.cuda.memory_reserved()/1024**2:.1f} MB")
+                del test_tensor
+                torch.cuda.empty_cache()
+            except Exception as e:
+                print(f"GPU memory test: FAILED - {e}")
+        else:
+            print("CUDA not available in PyTorch")
+            # Check possible reasons
+            try:
+                import subprocess
+                result = subprocess.run(['nvidia-smi'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    print("nvidia-smi works - GPU driver is installed")
+                    print("Issue might be PyTorch installation (CPU-only version)")
+                else:
+                    print("nvidia-smi failed - GPU driver issue")
+            except:
+                print("nvidia-smi not found - NVIDIA driver not installed")
+        
+        # 2. Check OpenCV DNN CUDA support
+        print(f"\nOpenCV version: {cv2.__version__}")
+        print(f"OpenCV DNN module available: {hasattr(cv2, 'dnn')}")
+        
+        # Check OpenCV build info for CUDA
+        try:
+            build_info = cv2.getBuildInformation()
+            cuda_lines = []
+            for line in build_info.split('\n'):
+                if any(keyword.upper() in line.upper() for keyword in ['cuda', 'gpu', 'nvidia']):
+                    cuda_lines.append(line.strip())
+            
+            if cuda_lines:
+                print("OpenCV CUDA-related build info:")
+                for line in cuda_lines:
+                    print(f"  {line}")
+            else:
+                print("OpenCV built WITHOUT CUDA support")
+                
+        except Exception as e:
+            print(f"Could not get OpenCV build info: {e}")
+        
+        # 3. Test OpenCV DNN CUDA backend
+        if hasattr(cv2, 'dnn'):
+            try:
+                # Create a simple test network
+                net = cv2.dnn.readNetFromDarknet(
+                    self.legacy_cfg if os.path.exists(self.legacy_cfg or "") else None,
+                    self.legacy_weights if os.path.exists(self.legacy_weights or "") else None
+                ) if all(os.path.exists(f or "") for f in [self.legacy_cfg, self.legacy_weights]) else None
+                
+                if net is not None:
+                    # Try to set CUDA backend
+                    net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+                    net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+                    
+                    # Test with dummy input
+                    dummy_input = np.random.randn(1, 3, 416, 416).astype(np.float32)
+                    net.setInput(cv2.dnn.blobFromImage(dummy_input))
+                    output = net.forward()
+                    print("OpenCV DNN CUDA test: PASSED")
+                else:
+                    print("OpenCV DNN CUDA test: SKIPPED (no model files)")
+                    
+            except Exception as e:
+                print(f"OpenCV DNN CUDA test: FAILED - {e}")
+                print("This usually means OpenCV was built without CUDA support")
+        
+        print("="*50)
+
     def _init_ultralytics_model(self):
-        """Initialize using ultralytics YOLO implementation"""
+        """Initialize using ultralytics YOLO implementation with better error handling"""
         try:
             from ultralytics import YOLO
             
-            # Device configuration
+            # Device configuration with fallback
             self.device = self._select_device()
             self.gpu_available = self.device == 'cuda'
             
@@ -81,60 +165,91 @@ class YOLODetector:
                 raise FileNotFoundError(f"Model not found: {self.model_path}")
             
             # Load YOLO model
+            logging.info(f"Loading model from: {self.model_path}")
             self.model = YOLO(self.model_path)
-            if self.gpu_available:
-                self.model.to(self.device)
-                self.model.fuse()  # Fuse layers for optimized inference
             
-            # Store class names for compatibility with both implementations
+            if self.gpu_available:
+                try:
+                    self.model.to(self.device)
+                    # Test GPU functionality
+                    dummy_image = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
+                    _ = self.model(dummy_image, verbose=False)
+                    logging.info("GPU test successful")
+                    
+                    # Fuse layers for optimized inference
+                    self.model.fuse()
+                except Exception as gpu_error:
+                    logging.error(f"GPU initialization failed: {gpu_error}")
+                    self.device = 'cpu'
+                    self.gpu_available = False
+                    self.model.to('cpu')
+            
+            # Store class names
             self.classes = list(self.model.names.values())
             
-            logging.info(f"Ultralytics YOLO initialized on {self.device.upper()}")
-            logging.info(f"Model architecture: {self.model.task}")
+            device_info = "GPU (CUDA)" if self.gpu_available else "CPU"
+            logging.info(f"Ultralytics YOLO initialized on {device_info}")
+            logging.info(f"Model task: {self.model.task}")
             logging.info(f"Available classes: {len(self.classes)}")
             self.using_ultralytics = True
+            
+        except ImportError as e:
+            logging.error(f"Ultralytics not installed: {e}")
+            raise
         except Exception as e:
             logging.error(f"Ultralytics initialization failed: {e}")
             raise
 
     def _init_opencv_yolo(self):
-        """Initialize OpenCV YOLO implementation"""
+        """Initialize OpenCV YOLO implementation with improved GPU handling"""
         # Validate file paths
         self._validate_files(self.legacy_cfg, self.legacy_weights, self.legacy_names)
         
         # Load network
+        logging.info("Loading OpenCV DNN model...")
         self.legacy_model = cv2.dnn.readNetFromDarknet(self.legacy_cfg, self.legacy_weights)
         
-        # Configure network backend based on GPU availability
+        # GPU configuration with comprehensive testing
+        self.gpu_available = False
         if self.use_gpu:
-            # Check if CUDA is actually available in this OpenCV build
-            cv_build_info = cv2.getBuildInformation()
-            if "CUDA" in cv_build_info and "Version" in cv_build_info:
-                try:
-                    # Try to use CUDA backend but be prepared to catch failures
-                    self.legacy_model.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
-                    self.legacy_model.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
-                    
-                    # Test if CUDA is actually working
-                    dummy_input = np.zeros((1, 3, self.input_size, self.input_size), dtype=np.float32)
-                    self.legacy_model.setInput(dummy_input)
-                    self.legacy_model.forward(self.legacy_model.getUnconnectedOutLayersNames())
-                    
-                    self.gpu_available = True
-                    logging.info("Successfully initialized CUDA backend for NVIDIA GPU")
-                except Exception as e:
-                    logging.warning(f"Failed to use CUDA backend: {e}")
-                    self.legacy_model.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-                    self.legacy_model.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-                    logging.info("Falling back to CPU backend")
-            else:
-                logging.warning("OpenCV built without CUDA support, using CPU")
+            try:
+                # Check if OpenCV has CUDA support
+                build_info = cv2.getBuildInformation()
+                has_cuda = "CUDA" in build_info and "YES" in build_info
+                
+                if not has_cuda:
+                    logging.warning("OpenCV built without CUDA support")
+                    raise Exception("OpenCV CUDA not available")
+                
+                # Try setting CUDA backend
+                self.legacy_model.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+                self.legacy_model.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+                
+                # Test with actual inference
+                test_image = np.random.randint(0, 255, (416, 416, 3), dtype=np.uint8)
+                blob = cv2.dnn.blobFromImage(test_image, 1/255.0, (416, 416), swapRB=True, crop=False)
+                self.legacy_model.setInput(blob)
+                
+                # Get output layer names
+                layer_names = self.legacy_model.getLayerNames()
+                output_layers = [layer_names[i - 1] for i in self.legacy_model.getUnconnectedOutLayers()]
+                
+                # Test forward pass
+                outputs = self.legacy_model.forward(output_layers)
+                
+                self.gpu_available = True
+                logging.info("OpenCV CUDA backend test: PASSED")
+                
+            except Exception as e:
+                logging.warning(f"CUDA backend failed: {e}")
+                # Fallback to CPU
                 self.legacy_model.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
                 self.legacy_model.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+                logging.info("Using CPU backend")
         else:
             self.legacy_model.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
             self.legacy_model.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-            logging.info("Using CPU backend as requested")
+            logging.info("CPU backend selected by user")
         
         # Load class names
         with open(self.legacy_names, 'r') as f:
@@ -145,17 +260,48 @@ class YOLODetector:
         self.output_layers = [layer_names[i - 1] for i in self.legacy_model.getUnconnectedOutLayers()]
         
         backend_type = "GPU (CUDA)" if self.gpu_available else "CPU"
-        logging.info(f"OpenCV YOLO Detector initialized with {self.num_threads} threads using {backend_type} backend")
+        logging.info(f"OpenCV YOLO initialized: {backend_type} backend, {len(self.classes)} classes")
         self.using_ultralytics = False
 
     def _select_device(self):
-        """Select appropriate computation device for ultralytics implementation"""
-        if self.use_gpu and torch.cuda.is_available():
+        """Select appropriate computation device with comprehensive checks"""
+        if not self.use_gpu:
+            logging.info("GPU disabled by user configuration")
+            return 'cpu'
+            
+        if not torch.cuda.is_available():
+            logging.warning("CUDA not available in PyTorch - using CPU")
+            return 'cpu'
+        
+        try:
+            # Test GPU functionality
+            device = torch.device('cuda')
+            test_tensor = torch.randn(10, 10).to(device)
+            result = test_tensor @ test_tensor.T
+            
+            # Enable optimizations
             torch.backends.cudnn.benchmark = True
-            logging.info(f"CUDA GPU detected: {torch.cuda.get_device_name(0)}")
+            torch.backends.cudnn.deterministic = False
+            
+            gpu_name = torch.cuda.get_device_name(0)
+            memory_gb = torch.cuda.get_device_properties(0).total_memory / 1024**3
+            logging.info(f"GPU selected: {gpu_name} ({memory_gb:.1f}GB)")
+            
             return 'cuda'
-        logging.warning("Using CPU for inference - GPU not available or not requested")
-        return 'cpu'
+            
+        except Exception as e:
+            logging.error(f"GPU test failed: {e}")
+            return 'cpu'
+
+    def clear_gpu_memory(self):
+        """Clear GPU memory cache"""
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            gc.collect()
+            if self.gpu_available:
+                allocated = torch.cuda.memory_allocated() / 1024**2
+                cached = torch.cuda.memory_reserved() / 1024**2
+                logging.debug(f"GPU memory - Allocated: {allocated:.1f}MB, Cached: {cached:.1f}MB")
 
     def _validate_files(self, cfg, weights, names):
         """Validate existence and readability of configuration files"""
@@ -178,125 +324,118 @@ class YOLODetector:
             if os.path.getsize(filepath) == 0:
                 raise ValueError(f"{file_type} is empty: {filepath}")
 
-    def _diagnostic_checks(self):
-        """Provide diagnostic information"""
-        print("\n--- DIAGNOSTIC INFORMATION ---")
-        
-        # PyTorch diagnostics
-        print(f"PyTorch version: {torch.__version__}")
-        print(f"CUDA available: {torch.cuda.is_available()}")
-        
-        if torch.cuda.is_available():
-            print(f"CUDA device count: {torch.cuda.device_count()}")
-            print(f"Current CUDA device: {torch.cuda.current_device()}")
-            print(f"Device name: {torch.cuda.get_device_name(0)}")
-            print(f"CUDA version: {torch.version.cuda}")
-        
-        # OpenCV diagnostics
-        print(f"\nOpenCV Version: {cv2.__version__}")
-        print(f"DNN Module Available: {hasattr(cv2, 'dnn')}")
-        
-        try:
-            cv_build_info = cv2.getBuildInformation()
-            print("\nOpenCV Build Information (CUDA-related):")
-            
-            for line in cv_build_info.split('\n'):
-                if any(keyword in line for keyword in ['CUDA', 'GPU', 'nvidia', 'NVIDIA']):
-                    print(f"  {line.strip()}")
-        except:
-            print("Could not get OpenCV build information")
-            
-        # Check model files
-        files_to_check = [self.model_path] if self.model_path else []
-        if self.legacy_cfg:
-            files_to_check.append(self.legacy_cfg)
-        if self.legacy_weights:
-            files_to_check.append(self.legacy_weights)
-        if self.legacy_names:
-            files_to_check.append(self.legacy_names)
-            
-        print("\nFile diagnostics:")
-        for filepath in files_to_check:
-            if filepath is None:
-                continue
-                
-            print(f"\nFile: {filepath}")
-            if not os.path.exists(filepath):
-                print(" File does not exist")
-            else:
-                print(" File exists")
-                print(f" Size: {os.path.getsize(filepath)} bytes")
-                print(f" Readable: {os.access(filepath, os.R_OK)}")
-
     def detect(self, images):
         """
-        Detect objects in images
-        
-        Args:
-            images (list/np.ndarray): Input images in BGR format (OpenCV default)
-        
-        Returns:
-            list: List of detections for each image
+        Detect objects in images with improved memory management
         """
         if not isinstance(images, list):
             images = [images]
+        
+        try:
+            if self.using_ultralytics:
+                return self._detect_ultralytics(images)
+            else:
+                return self._detect_opencv(images)
+        except Exception as e:
+            logging.error(f"Detection failed: {e}")
+            # Clear memory and retry once
+            self.clear_gpu_memory()
+            try:
+                if self.using_ultralytics:
+                    return self._detect_ultralytics(images)
+                else:
+                    return self._detect_opencv(images)
+            except Exception as retry_error:
+                logging.error(f"Detection retry failed: {retry_error}")
+                return [[] for _ in images]
+
+    def _detect_ultralytics(self, images):
+        """Detect using Ultralytics with better memory management"""
+        results = []
+        
+        # Process in smaller batches for memory efficiency
+        batch_size = min(4, len(images))
+        
+        for i in range(0, len(images), batch_size):
+            batch = images[i:i + batch_size]
             
-        # Process images using the OpenCV implementation
-        return self._detect_opencv(images)
+            try:
+                # Run inference
+                preds = self.model(batch, verbose=False, device=self.device)
+                
+                # Process results
+                for pred in preds:
+                    detections = []
+                    if pred.boxes is not None:
+                        for box in pred.boxes:
+                            conf = float(box.conf.cpu().numpy())
+                            if conf > self.conf_threshold:
+                                cls_id = int(box.cls.cpu().numpy())
+                                xyxy = box.xyxy.cpu().numpy()[0]
+                                
+                                # Convert to x,y,w,h format
+                                x, y, x2, y2 = xyxy
+                                w, h = x2 - x, y2 - y
+                                
+                                detections.append({
+                                    'class': self.classes[cls_id] if cls_id < len(self.classes) else "unknown",
+                                    'confidence': conf,
+                                    'box': [int(x), int(y), int(w), int(h)]
+                                })
+                    
+                    results.append(detections)
+                
+                # Clear batch from memory
+                del preds
+                if self.gpu_available:
+                    torch.cuda.empty_cache()
+                    
+            except Exception as e:
+                logging.error(f"Batch processing failed: {e}")
+                # Add empty results for failed batch
+                results.extend([[] for _ in batch])
+        
+        return results
 
     def _detect_opencv(self, images):
         """Detect objects using OpenCV DNN implementation"""
-        if len(images) == 1:
-            # For single image, just process directly
-            return [self._process_single_image_opencv(images[0])]
-        else:
-            # For multiple images, process sequentially to avoid issues
-            results = []
-            for image in images:
-                results.append(self._process_single_image_opencv(image))
-            return results
+        results = []
+        
+        for image in images:
+            try:
+                result = self._process_single_image_opencv(image)
+                results.append(result)
+            except Exception as e:
+                logging.error(f"OpenCV detection failed for image: {e}")
+                results.append([])
+                
+        return results
     
     def _process_single_image_opencv(self, image):
         """Process a single image for detection using OpenCV DNN"""
         try:
-            # Create a copy of the image to prevent memory issues
-            image_copy = image.copy()
-            
             # Preprocess image
             blob = cv2.dnn.blobFromImage(
-                image_copy, 
+                image, 
                 1/255.0, 
                 (self.input_size, self.input_size), 
                 swapRB=True, 
                 crop=False
             )
             
-            # Create a new detector for each image to avoid GPU memory issues
-            if self.legacy_model is None:
-                self._init_opencv_yolo()
-                
             # Set input and perform detection
             self.legacy_model.setInput(blob)
             detections = self.legacy_model.forward(self.output_layers)
             
             # Process detections
-            return self._process_opencv_detections(detections, image_copy.shape)
+            return self._process_opencv_detections(detections, image.shape)
         
         except Exception as e:
-            logging.error(f"OpenCV detection failed for image: {e}")
+            logging.error(f"OpenCV detection failed: {e}")
             return []
     
     def _process_opencv_detections(self, detections, image_shape):
-        """
-        Process raw OpenCV DNN detections
-        
-        Args:
-            detections (list): Raw network detections
-            image_shape (tuple): Original image shape
-        
-        Returns:
-            list: Processed detections with filtering
-        """
+        """Process raw OpenCV DNN detections"""
         height, width = image_shape[:2]
         results = []
 
@@ -323,11 +462,10 @@ class YOLODetector:
         
         # Non-maximum suppression
         if results:
-            boxes = [det['box'] for det in results]
-            confidences = [det['confidence'] for det in results]
-            
-            # Handle potential empty list or other NMS issues
             try:
+                boxes = [det['box'] for det in results]
+                confidences = [det['confidence'] for det in results]
+                
                 indices = cv2.dnn.NMSBoxes(
                     boxes, 
                     confidences, 
@@ -335,139 +473,72 @@ class YOLODetector:
                     self.iou_threshold
                 )
                 
-                # Handle OpenCV 4.x vs 3.x differences in NMSBoxes return format
                 if len(indices) > 0:
                     if isinstance(indices, tuple):
                         indices = indices[0]
                     elif isinstance(indices, np.ndarray):
                         indices = indices.flatten()
                         
-                    # Filter results based on NMS indices
                     return [results[i] for i in indices]
                 
             except Exception as e:
                 logging.error(f"NMS processing error: {e}")
-                # If NMS fails, return top confidence results
                 results.sort(key=lambda x: x['confidence'], reverse=True)
-                return results[:10]  # Return top 10 detections
+                return results[:10]
         
         return []
 
-    def extract_frames(self, video_path, skip_frames=0):
-        """
-        Extract frames from a video
+    def _diagnostic_checks(self):
+        """Provide comprehensive diagnostic information"""
+        print("\n" + "="*50)
+        print("DETAILED DIAGNOSTICS")
+        print("="*50)
         
-        Args:
-            video_path (str): Path to input video
-            skip_frames (int): Number of frames to skip between extractions
-            
-        Returns:
-            tuple: (frames, total_frames)
-        """
-        if not os.path.exists(video_path):
-            raise FileNotFoundError(f"Video file not found: {video_path}")
-            
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video: {video_path}")
-            
-        frames = []
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # System info
+        import platform
+        print(f"Operating System: {platform.system()} {platform.release()}")
+        print(f"Python version: {platform.python_version()}")
         
-        # Use tqdm for frame extraction with position=0
-        with tqdm(total=total_frames, desc="Extracting Frames", position=0, leave=True) as pbar:
-            frame_index = 0
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                    
-                if frame_index % (skip_frames + 1) == 0:
-                    frames.append(frame)
-                    
-                frame_index += 1
-                pbar.update(1)
-                
-        cap.release()
-        logging.info(f"Successfully extracted {len(frames)} frames from {video_path}")
-        return frames, total_frames
-
-    def process_video(self, video_path, output_path=None, display=False):
-        """
-        Process video with object detection
+        # PyTorch diagnostics
+        print(f"\nPyTorch version: {torch.__version__}")
+        print(f"CUDA available: {torch.cuda.is_available()}")
         
-        Args:
-            video_path (str): Path to input video
-            output_path (str): Optional output path
-            display (bool): Show real-time preview
+        if torch.cuda.is_available():
+            print(f"CUDA device count: {torch.cuda.device_count()}")
+            print(f"Current CUDA device: {torch.cuda.current_device()}")
+            print(f"Device name: {torch.cuda.get_device_name(0)}")
+            print(f"CUDA version: {torch.version.cuda}")
+            print(f"cuDNN version: {torch.backends.cudnn.version()}")
             
-        Returns:
-            bool: Processing success status
-        """
-        try:
-            cap = cv2.VideoCapture(video_path)
-            if not cap.isOpened():
-                raise ValueError(f"Could not open video: {video_path}")
-
-            # Get video properties
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            cap.release()  # Release the capture object
-
-            print("Loading reference data...")
-            frames, _ = self.extract_frames(video_path, skip_frames=7)
+            # Memory info
+            device_props = torch.cuda.get_device_properties(0)
+            print(f"GPU memory: {device_props.total_memory / 1024**3:.1f} GB")
+            print(f"GPU compute capability: {device_props.major}.{device_props.minor}")
+        
+        # OpenCV diagnostics
+        print(f"\nOpenCV Version: {cv2.__version__}")
+        print(f"DNN Module Available: {hasattr(cv2, 'dnn')}")
+        
+        # Model files check
+        files_to_check = []
+        if self.model_path:
+            files_to_check.append(("PyTorch Model", self.model_path))
+        if self.legacy_cfg:
+            files_to_check.append(("YOLOv4 Config", self.legacy_cfg))
+        if self.legacy_weights:
+            files_to_check.append(("YOLOv4 Weights", self.legacy_weights))
+        if self.legacy_names:
+            files_to_check.append(("Class Names", self.legacy_names))
             
-            # Video writer setup
-            writer = None
-            if output_path:
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-            # Process frames sequentially to avoid memory issues
-            with tqdm(total=len(frames), desc="Processing Reference Frames", position=0, leave=True) as pbar:
-                for i, frame in enumerate(frames):
-                    # Process one frame at a time
-                    detections = self.detect(frame)[0]
-                    
-                    # Draw detections on frame
-                    self._draw_detections(frame, detections)
-                    
-                    # Write or display frame
-                    if writer:
-                        writer.write(frame)
-                    if display:
-                        cv2.imshow('YOLO Detection', frame)
-                        if cv2.waitKey(1) & 0xFF == ord('q'):
-                            break
-                    
-                    pbar.update(1)
-
-            if writer:
-                writer.release()
-            if display:
-                cv2.destroyAllWindows()
-                
-            logging.info(f"Video processing completed successfully")
-            return True
-
-        except Exception as e:
-            logging.error(f"Video processing failed: {e}")
-            return False
-
-    def _draw_detections(self, frame, detections):
-        """Draw detections on frame"""
-        for det in detections:
-            x, y, w, h = det['box']
-            label = f"{det['class']} {det['confidence']:.2f}"
-            
-            # Draw rectangle (using x,y,w,h format)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            
-            # Add label text
-            cv2.putText(frame, label, (x, y-10), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        print(f"\nModel Files:")
+        for name, filepath in files_to_check:
+            if filepath and os.path.exists(filepath):
+                size_mb = os.path.getsize(filepath) / 1024**2
+                print(f"  {name}: ✓ ({size_mb:.1f} MB)")
+            else:
+                print(f"  {name}: ✗ (missing)")
+        
+        print("="*50)
 
     def __str__(self):
         """String representation with implementation info"""
@@ -476,4 +547,65 @@ class YOLODetector:
         
         return (f"YOLO Detector (Implementation: {impl}, Device: {device}, "
                 f"Classes: {len(self.classes)}, Conf: {self.conf_threshold}, "
-                f"IoU: {self.iou_threshold}, Threads: {self.num_threads})")
+                f"IoU: {self.iou_threshold})")
+
+
+# Additional utility functions for troubleshooting
+def check_gpu_setup():
+    """Standalone function to check GPU setup"""
+    print("GPU SETUP CHECKER")
+    print("="*50)
+    
+    # Check NVIDIA driver
+    try:
+        import subprocess
+        result = subprocess.run(['nvidia-smi'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print("✓ NVIDIA driver installed")
+            print("GPU Information:")
+            lines = result.stdout.split('\n')
+            for line in lines:
+                if 'NVIDIA-SMI' in line or 'Driver Version' in line:
+                    print(f"  {line.strip()}")
+        else:
+            print("✗ nvidia-smi failed")
+    except Exception as e:
+        print(f"✗ nvidia-smi not available: {e}")
+    
+    # Check PyTorch CUDA
+    try:
+        import torch
+        print(f"\n✓ PyTorch {torch.__version__} installed")
+        if torch.cuda.is_available():
+            print(f"✓ PyTorch CUDA support: {torch.version.cuda}")
+            print(f"✓ GPU available: {torch.cuda.get_device_name(0)}")
+        else:
+            print("✗ PyTorch CUDA not available")
+            print("  Install PyTorch with CUDA: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118")
+    except ImportError:
+        print("✗ PyTorch not installed")
+    
+    # Check OpenCV
+    try:
+        import cv2
+        print(f"\n✓ OpenCV {cv2.__version__} installed")
+        build_info = cv2.getBuildInformation()
+        if "CUDA" in build_info and "YES" in build_info:
+            print("✓ OpenCV built with CUDA support")
+        else:
+            print("✗ OpenCV built without CUDA support")
+            print("  Install OpenCV with CUDA: pip install opencv-contrib-python")
+    except ImportError:
+        print("✗ OpenCV not installed")
+
+if __name__ == "__main__":
+    # Run diagnostics
+    check_gpu_setup()
+    
+    # Test YOLO detector
+    try:
+        detector = YOLODetector()
+        print(f"\nYOLO Detector initialized successfully:")
+        print(detector)
+    except Exception as e:
+        print(f"\nYOLO Detector initialization failed: {e}")
