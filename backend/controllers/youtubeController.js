@@ -12,7 +12,7 @@ const collections = {
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-const MAX_RESULTS = 10;
+const MAX_RESULTS = 100;
 
 //Function to create missing collections
 const createCollectionsIfNotExist = async () => {

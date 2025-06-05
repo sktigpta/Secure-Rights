@@ -9,9 +9,8 @@ const QueryRow = ({ onNotification }) => {
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("")
   const typingIntervalRef = useRef(null)
   const typingTimeoutRef = useRef(null)
-  
-  // Mock API URL for demo - replace with your actual API
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001/api"
+
+  const API_URL = process.env.REACT_APP_API_URL || "https://backend.securerights.app/api"
 
   const placeholders = ["Add character name...", "Add dialogue...", "Add movie title..."]
 
@@ -20,15 +19,9 @@ const QueryRow = ({ onNotification }) => {
     let charIndex = 0
     const currentText = placeholders[placeholderIndex]
 
-    // Clear any existing intervals/timeouts
-    if (typingIntervalRef.current) {
-      clearInterval(typingIntervalRef.current)
-    }
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
 
-    // Reset displayed placeholder for new text
     setDisplayedPlaceholder("")
 
     typingIntervalRef.current = setInterval(() => {
@@ -45,12 +38,8 @@ const QueryRow = ({ onNotification }) => {
     }, 100)
 
     return () => {
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current)
-      }
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current)
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     }
   }, [placeholderIndex])
 
@@ -60,25 +49,18 @@ const QueryRow = ({ onNotification }) => {
 
   const fetchQueries = async () => {
     try {
-      // Start with empty queries - users will add their own
-      setQueries([])
-      
-      /* 
-      // Actual API call - uncomment and modify as needed
       const response = await fetch(`${API_URL}/search-queries`)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       const data = await response.json()
-      
       if (Array.isArray(data)) {
         setQueries(data)
       } else {
         onNotification?.("Received data is not an array", "error")
       }
-      */
     } catch (error) {
-      console.error('Fetch queries error:', error)
+      console.error("Fetch queries error:", error)
       onNotification?.("Failed to fetch queries", "error")
     }
   }
@@ -94,67 +76,42 @@ const QueryRow = ({ onNotification }) => {
     if (!trimmedQuery) return
 
     try {
-      // Mock API call - replace with actual API
-      const newQueryObj = {
-        id: Date.now(), // Simple ID generation for demo
-        query: trimmedQuery
-      }
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      setQueries((prev) => [...prev, newQueryObj])
-      setNewQuery("")
-      onNotification?.(`Query "${trimmedQuery}" added successfully`, "success")
-
-      /* 
-      // Actual API call - uncomment and modify as needed
       const response = await fetch(`${API_URL}/search-queries`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: trimmedQuery })
+        body: JSON.stringify({ query: trimmedQuery }),
       })
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+
       const data = await response.json()
       setQueries((prev) => [...prev, data])
       setNewQuery("")
       onNotification?.(`Query "${trimmedQuery}" added successfully`, "success")
-      */
     } catch (error) {
-      console.error('Add query error:', error)
+      console.error("Add query error:", error)
       onNotification?.("Failed to add query", "error")
     }
   }
 
   const deleteQuery = async (id, queryText) => {
     try {
-      // Mock API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      setQueries((prev) => prev.filter((query) => query.id !== id))
-      onNotification?.(`Query "${queryText}" deleted`, "success")
-
-      /* 
-      // Actual API call - uncomment and modify as needed
       const response = await fetch(`${API_URL}/search-queries/${id}`, {
-        method: 'DELETE'
+        method: "DELETE",
       })
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+
       setQueries((prev) => prev.filter((query) => query.id !== id))
       onNotification?.(`Query "${queryText}" deleted`, "success")
-      */
     } catch (error) {
-      console.error('Delete query error:', error)
+      console.error("Delete query error:", error)
       onNotification?.("Failed to delete query", "error")
     }
   }
@@ -170,14 +127,10 @@ const QueryRow = ({ onNotification }) => {
           onChange={(e) => setNewQuery(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        {/* Logo inside input - right side */}
         <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 group cursor-help">
           <HelpCircle size={12} className="text-gray-400" />
-          
-          {/* Tooltip - appears below the logo with high z-index */}
           <div className="absolute right-0 top-6 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-500">
             <div>Add character names, dialogue, or movie titles. The system fetches videos from YouTube based on your provided queries.</div>
-            {/* Arrow pointing up */}
             <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-800 rotate-45"></div>
           </div>
         </div>
@@ -200,8 +153,6 @@ const QueryRow = ({ onNotification }) => {
           </div>
         ))}
       </div>
-
-
     </div>
   )
 }
