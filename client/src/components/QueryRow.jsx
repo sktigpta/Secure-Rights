@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState, useRef } from "react"
-import { X } from "lucide-react"
+import { X, HelpCircle } from "lucide-react"
 
 const QueryRow = ({ onNotification }) => {
   const [queries, setQueries] = useState([])
@@ -168,7 +168,7 @@ const QueryRow = ({ onNotification }) => {
   }
 
   return (
-    <div className="flex items-center gap-3 w-full overflow-x-auto">
+    <div className="flex items-center gap-3 w-full overflow-x-auto relative">
       <input
         type="text"
         className="min-w-[250px] py-2 px-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
@@ -194,6 +194,26 @@ const QueryRow = ({ onNotification }) => {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* Help Icon - Hidden on mobile */}
+      <div className="hidden md:block absolute top-0 right-0 group">
+        <div className="relative">
+          <div className="w-2 h-2 bg-red-500 rounded-full flex items-center justify-center cursor-help hover:w-6 hover:h-6 transition-all duration-200 group-hover:bg-blue-500">
+            <HelpCircle 
+              size={12} 
+              className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
+            />
+          </div>
+          
+          {/* Tooltip */}
+          <div className="absolute right-0 top-8 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+            <div className="font-medium mb-1">How it works:</div>
+            <div>Add character names, dialogue, or movie titles. The system fetches videos from YouTube based on your provided queries.</div>
+            {/* Arrow */}
+            <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-800 rotate-45"></div>
+          </div>
+        </div>
       </div>
     </div>
   )
