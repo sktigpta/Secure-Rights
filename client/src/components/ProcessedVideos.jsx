@@ -151,71 +151,72 @@ const ProcessedVideos = ({ onNotification }) => {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 max-h-[75vh] flex flex-col">
-        <div className="p-3 flex justify-between items-center border-b border-gray-100">
+      <div className="bg-transparent rounded-lg shadow-none border border-gray-200 max-h-[75vh] flex flex-col">
+        <div className="p-4 flex justify-between items-center border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-800 m-0">Processed Videos</h3>
-            <span className="bg-blue-50 text-blue-600 text-xs font-medium py-0.5 px-2 rounded-full">{videos?.length || 0}</span>
+            <h3 className="text-base font-semibold text-gray-800 m-0">Processed Videos</h3>
+            <span className="bg-sky-100 text-sky-700 text-xs font-medium py-0.5 px-2 rounded-full">{videos?.length || 0}</span>
           </div>
-          <button 
-            className="flex items-center justify-center w-7 h-7 rounded-full text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all duration-200"
-            onClick={() => setIsCollapsed(!isCollapsed)} 
-            title={isCollapsed ? "Expand" : "Collapse"}
-          >
-            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-          </button>
+          <div className="flex gap-2">
+            <button 
+              className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors duration-200"
+              onClick={() => setIsCollapsed(!isCollapsed)} 
+              title={isCollapsed ? "Expand" : "Collapse"}
+            >
+              {isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            </button>
+          </div>
         </div>
 
         {!isCollapsed && (
-          <div className="p-3 flex-1 overflow-y-auto">
+          <div className="p-4 flex-1 overflow-y-scroll h-[80vh]">
             {videos.length > 0 ? (
-              <div className="space-y-3">
+              <div className="flex flex-col gap-4">
                 {videos.map((video) => (
-                  <div key={video.videoId} className="bg-gray-50 border border-gray-100 rounded-lg overflow-hidden hover:shadow-sm transition-all duration-200">
-                    <div className="flex gap-3 p-3">
-                      <div className="relative group cursor-pointer" onClick={() => openYouTubeVideo(video.videoId)}>
-                        <img 
-                          src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`} 
-                          alt={videoData[video.videoId]?.title || "No title available"} 
-                          className="w-20 h-11 object-cover rounded-md group-hover:opacity-80 transition-opacity duration-200" 
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-md flex items-center justify-center transition-all duration-200">
-                          <ExternalLink size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                  <div key={video.videoId} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="flex gap-3 p-3 border-b border-gray-200">
+                      <img 
+                        src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`} 
+                        alt={videoData[video.videoId]?.title || "No title available"} 
+                        className="w-[100px] h-[56px] object-cover rounded-md" 
+                      />
+                      <div className="flex-1 flex items-center">
+                        <h4 className="text-sm font-medium line-clamp-2 overflow-hidden">{videoData[video.videoId]?.title || "Untitled Video"}</h4>
+                      </div>
+                    </div>
+                    <div className="p-3 flex justify-between items-center flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-4">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500">Copy Percentage:</span>
+                          <span className={`text-sm font-medium ${video.copyPercentage > 70 ? "text-red-500" : "text-gray-800"}`}>
+                            {video.copyPercentage?.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500">Status:</span>
+                          <span className={`text-sm font-medium ${video.copied ? "text-emerald-500" : "text-gray-500"}`}>
+                            {video.copied ? "Copied" : "Not Copied"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500">Processed At:</span>
+                          <span className="text-sm font-medium">{formatFirebaseTimestamp(video.processedAt)}</span>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-medium text-gray-800 line-clamp-2 mb-1 leading-tight">
-                          {videoData[video.videoId]?.title || "Untitled Video"}
-                        </h4>
-                        <div className="flex flex-wrap gap-3 text-xs">
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-400">Copy:</span>
-                            <span className={`font-medium ${video.copyPercentage > 70 ? "text-green-600" : "text-red-500"}`}>
-                              {video.copyPercentage?.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-400">Status:</span>
-                            <span className={`font-medium ${video.copied ? "text-green-600" : "text-gray-500"}`}>
-                              {video.copied ? "Copied" : "Clean"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
+                      <div className="flex gap-2">
                         <button 
-                          className="flex items-center gap-1 bg-gray-600 text-white py-1 px-2 rounded text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
+                          className="flex items-center gap-1.5 bg-gray-600 text-white py-1.5 px-3 rounded-lg text-xs font-medium hover:bg-gray-700 transition-colors duration-200"
                           onClick={() => handleViewDetails(video)}
                         >
-                          <Eye size={12} />
-                          Details
+                          <Eye size={14} />
+                          <span>View Details</span>
                         </button>
                         <button 
-                          className="flex items-center gap-1 bg-blue-600 text-white py-1 px-2 rounded text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
+                          className="flex items-center gap-1.5 bg-blue-600 text-white py-1.5 px-3 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors duration-200"
                           onClick={() => handleDMCA(video.videoId, videoData[video.videoId]?.title)}
                         >
-                          <FileText size={12} />
-                          DMCA
+                          <FileText size={14} />
+                          <span>Generate DMCA</span>
                         </button>
                       </div>
                     </div>
@@ -223,7 +224,7 @@ const ProcessedVideos = ({ onNotification }) => {
                 ))}
               </div>
             ) : (
-              <div className="text-center text-gray-400 py-6 text-xs">No processed videos available</div>
+              <div className="text-center text-gray-500 py-8 text-sm">No processed videos available</div>
             )}
           </div>
         )}
