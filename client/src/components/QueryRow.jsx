@@ -4,10 +4,36 @@ import axios from "axios"
 import { X } from "lucide-react"
 
 const QueryRow = ({ onNotification }) => {
-  const [queries, setQueries] = useState([]) 
+  const [queries, setQueries] = useState([])
   const [newQuery, setNewQuery] = useState("")
+  const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [displayedPlaceholder, setDisplayedPlaceholder] = useState("")
   const scrollContainerRef = useRef(null)
-  const API_URL = import.meta.env.VITE_API_URL 
+  const typingIntervalRef = useRef(null)
+  const API_URL = import.meta.env.VITE_API_URL
+
+  const placeholders = ["Add tag...", "Dialogue...", "Movie name..."]
+
+  // Typing effect logic
+  useEffect(() => {
+    let charIndex = 0
+    const currentText = placeholders[placeholderIndex]
+
+    typingIntervalRef.current = setInterval(() => {
+      if (charIndex < currentText.length) {
+        setDisplayedPlaceholder((prev) => prev + currentText[charIndex])
+        charIndex++
+      } else {
+        clearInterval(typingIntervalRef.current)
+        setTimeout(() => {
+          setDisplayedPlaceholder("")
+          setPlaceholderIndex((prev) => (prev + 1) % placeholders.length)
+        }, 1500)
+      }
+    }, 100)
+
+    return () => clearInterval(typingIntervalRef.current)
+  }, [placeholderIndex])
 
   useEffect(() => {
     fetchQueries()
@@ -26,7 +52,7 @@ const QueryRow = ({ onNotification }) => {
     }
   }
 
-  const handleKeyDown = async (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" && newQuery.trim()) {
       addQuery()
     }
@@ -37,7 +63,7 @@ const QueryRow = ({ onNotification }) => {
 
     try {
       const response = await axios.post(`${API_URL}/search-queries`, { query: newQuery })
-      setQueries((prevQueries) => [...prevQueries, response.data])
+      setQueries((prev) => [...prev, response.data])
       setNewQuery("")
       onNotification(`Query "${newQuery}" added successfully`, "success")
 
@@ -54,7 +80,7 @@ const QueryRow = ({ onNotification }) => {
   const deleteQuery = async (id, queryText) => {
     try {
       await axios.delete(`${API_URL}/search-queries/${id}`)
-      setQueries((prevQueries) => prevQueries.filter((query) => query.id !== id))
+      setQueries((prev) => prev.filter((query) => query.id !== id))
       onNotification(`Query "${queryText}" deleted`, "success")
     } catch (error) {
       onNotification("Failed to delete query", "error")
@@ -66,24 +92,28 @@ const QueryRow = ({ onNotification }) => {
       <input
         type="text"
         className="min-w-[250px] py-2 px-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
-        placeholder="Add new query..."
+        placeholder={newQuery ? "" : displayedPlaceholder}
         value={newQuery}
         onChange={(e) => setNewQuery(e.target.value)}
         onKeyDown={handleKeyDown}
       />
 
       <div className="flex gap-2 flex-nowrap" ref={scrollContainerRef}>
-        {Array.isArray(queries) && queries.map((query) => (
-          <div className="flex items-center gap-1.5 bg-sky-100 text-sky-700 rounded-full py-1.5 px-3 text-sm whitespace-nowrap" key={query.id}>
-            <span>{query.query}</span>
-            <button
-              className="flex items-center justify-center text-sky-700 opacity-70 hover:opacity-100 transition-opacity duration-200"
-              onClick={() => deleteQuery(query.id, query.query)}
+        {Array.isArray(queries) &&
+          queries.map((query) => (
+            <div
+              className="flex items-center gap-1.5 bg-sky-100 text-sky-700 rounded-full py-1.5 px-3 text-sm whitespace-nowrap"
+              key={query.id}
             >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
+              <span>{query.query}</span>
+              <button
+                className="flex items-center justify-center text-sky-700 opacity-70 hover:opacity-100 transition-opacity duration-200"
+                onClick={() => deleteQuery(query.id, query.query)}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
       </div>
     </div>
   )
