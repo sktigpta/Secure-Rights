@@ -259,11 +259,11 @@ const ProcessedVideos = ({ onNotification }) => {
             <div className="p-4 overflow-y-auto max-h-[calc(85vh-80px)]">
               {/* Main Content Layout */}
               <div className="flex gap-4">
-                {/* Left Section - Thumbnail and Video Info */}
-                <div className="w-80 flex-shrink-0">
+                {/* Left Section - Thumbnail, Video Info, and Copyright Analysis */}
+                <div className="w-80 flex-shrink-0 space-y-4">
                   {/* Clickable Thumbnail */}
                   <div 
-                    className="relative mb-3 cursor-pointer group"
+                    className="relative cursor-pointer group"
                     onClick={() => openVideoInYoutube(selectedVideo.videoId)}
                   >
                     <img 
@@ -321,11 +321,8 @@ const ProcessedVideos = ({ onNotification }) => {
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Right Section - Copyright Analysis */}
-                <div className="flex-1 space-y-4">
-                  {/* Copyright Analysis */}
+                  {/* Copyright Analysis - Moved to left side bottom */}
                   <div>
                     <h4 className="text-base font-semibold text-gray-800 mb-3">Copyright Analysis</h4>
                     
@@ -333,8 +330,8 @@ const ProcessedVideos = ({ onNotification }) => {
                       <div className="flex justify-between items-center mb-3">
                         <span className="text-sm font-medium text-gray-700">Copy Percentage</span>
                         <span className={`text-2xl font-bold ${
-                          selectedVideo.copyPercentage > 70 ? "text-green-500" : 
-                          selectedVideo.copyPercentage > 30 ? "text-amber-500" : "text-red-500"
+                          selectedVideo.copyPercentage > 70 ? "text-red-500" : 
+                          selectedVideo.copyPercentage > 30 ? "text-amber-500" : "text-green-500"
                         }`}>
                           {selectedVideo.copyPercentage?.toFixed(1)}%
                         </span>
@@ -343,9 +340,9 @@ const ProcessedVideos = ({ onNotification }) => {
                       <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
                         <div 
                           className={`h-3 rounded-full transition-all duration-500 ${
-                            selectedVideo.copyPercentage > 70 ? "bg-gradient-to-r from-green-500 to-green-600" : 
+                            selectedVideo.copyPercentage > 70 ? "bg-gradient-to-r from-red-500 to-red-600" : 
                             selectedVideo.copyPercentage > 30 ? "bg-gradient-to-r from-amber-500 to-amber-600" : 
-                            "bg-gradient-to-r from-red-500 to-red-600"
+                            "bg-gradient-to-r from-green-500 to-green-600"
                           }`}
                           style={{ width: `${Math.min(selectedVideo.copyPercentage, 100)}%` }}
                         ></div>
@@ -360,7 +357,10 @@ const ProcessedVideos = ({ onNotification }) => {
                       </div>
                     </div>
                   </div>
+                </div>
 
+                {/* Right Section - Timeline Analysis */}
+                <div className="flex-1 space-y-4">
                   {/* Timeline Analysis */}
                   <div>
                     <h4 className="text-base font-semibold text-gray-800 mb-3">Timeline Analysis</h4>
@@ -377,9 +377,9 @@ const ProcessedVideos = ({ onNotification }) => {
                         </div>
                       </div>
                       
-                      {/* Enhanced Timeline Bar */}
+                      {/* Enhanced Timeline Bar - Made thinner */}
                       <div className="relative mb-2">
-                        <div className="w-full h-8 bg-gray-200 rounded-lg overflow-hidden relative border border-gray-300/50">
+                        <div className="w-full h-4 bg-gray-200 rounded-lg overflow-hidden relative border border-gray-300/50">
                           {generateTimeline(selectedVideo.timestamps, selectedVideo.totalDuration || 300).map((segment, index) => (
                             <div
                               key={index}
@@ -434,8 +434,8 @@ const ProcessedVideos = ({ onNotification }) => {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center py-8 bg-red-50/50 rounded-lg border border-red-200/50">
-                        <div className="w-full h-8 bg-gradient-to-r from-red-500 to-red-600 rounded-lg mb-4"></div>
+                      <div className="text-center py-8 bg-green-50/50 rounded-lg border border-green-200/50">
+                        <div className="w-full h-4 bg-gradient-to-r from-green-500 to-green-600 rounded-lg mb-4"></div>
                         <div className="flex justify-between text-xs text-gray-500 mb-4">
                           <span>0:00</span>
                           <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.25))}</span>
@@ -443,7 +443,7 @@ const ProcessedVideos = ({ onNotification }) => {
                           <span>{secondsToTime(Math.floor((selectedVideo.totalDuration || 300) * 0.75))}</span>
                           <span>{secondsToTime(selectedVideo.totalDuration || 300)}</span>
                         </div>
-                        <div className="text-red-600 font-medium text-base mb-1">✓ Clean Content</div>
+                        <div className="text-green-600 font-medium text-base mb-1">✓ Clean Content</div>
                         <p className="text-gray-600 text-sm">No copyright violations detected in this video</p>
                       </div>
                     )}
