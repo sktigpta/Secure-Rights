@@ -300,5 +300,4 @@ function DMCAReport() {
   );
 }
 
-
 export default DMCAReport;
