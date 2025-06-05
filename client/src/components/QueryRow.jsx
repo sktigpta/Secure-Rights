@@ -14,7 +14,7 @@ const QueryRow = ({ onNotification }) => {
   // Mock API URL for demo - replace with your actual API
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001/api"
 
-  const placeholders = ["Add tag...", "Dialogue...", "Movie name..."]
+  const placeholders = ["Add character name...", "Add dialogue...", "Add movie title..."]
 
   // Typing effect logic
   useEffect(() => {
@@ -61,18 +61,8 @@ const QueryRow = ({ onNotification }) => {
 
   const fetchQueries = async () => {
     try {
-      // Mock API call - replace with actual API
-      const mockQueries = [
-        { id: 1, query: "Action movies" },
-        { id: 2, query: "Comedy" },
-        { id: 3, query: "Sci-fi" }
-      ]
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      setQueries(mockQueries)
-      onNotification?.("Queries loaded successfully", "success")
+      // Start with empty queries - users will add their own
+      setQueries([])
       
       /* 
       // Actual API call - uncomment and modify as needed
