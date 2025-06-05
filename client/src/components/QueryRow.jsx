@@ -176,7 +176,6 @@ const QueryRow = ({ onNotification }) => {
           
           {/* Tooltip - appears below the logo with high z-index */}
           <div className="absolute right-0 top-6 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-500">
-            <div className="font-medium mb-1">How it works:</div>
             <div>Add character names, dialogue, or movie titles. The system fetches videos from YouTube based on your provided queries.</div>
             {/* Arrow pointing up */}
             <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-800 rotate-45"></div>
