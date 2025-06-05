@@ -4,25 +4,18 @@ const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
 
-// Import Firebase config
+// Firebase Initialization
 require("./config/firebase.js");
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
+const app = express();
+
+// Setup Temporary Upload Directory for Vercel
+const uploadsDir = path.join('/tmp', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
+console.log("Temporary upload directory created:", uploadsDir);
 
-// Import Routes
-const youtubeRoutes = require("./routes/youtubeRoutes.js");
-const searchQueriesRoute = require("./routes/searchQueries.js");
-const gettingPermissionIds = require("./routes/permissionRoutes.js");
-const processedRoutes = require("./routes/processedRoutes.js");
-const dmcaRoutes = require("./routes/dmcaRoutes.js");
-const authRoutes = require("./routes/authRoutes.js");
-
-const app = express();
-console.log(process.env.FRONTEND_PORT)
 // CORS Configuration
 const allowedOrigins = [
   `http://localhost:${process.env.FRONTEND_PORT}`,
@@ -44,26 +37,27 @@ app.use(
   })
 );
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+// Parse JSON bodies
 app.use(express.json());
 
-// Routes
+// Serve files from /tmp/uploads (only for internal or debug, not permanent hosting)
+app.use("/uploads", express.static(uploadsDir));
+
+// Import Routes
+const youtubeRoutes = require("./routes/youtubeRoutes.js");
+const searchQueriesRoute = require("./routes/searchQueries.js");
+const gettingPermissionIds = require("./routes/permissionRoutes.js");
+const processedRoutes = require("./routes/processedRoutes.js");
+const dmcaRoutes = require("./routes/dmcaRoutes.js");
+const authRoutes = require("./routes/authRoutes.js");
+
+// Mount Routes
 app.use("/api/youtube", youtubeRoutes);
 app.use("/api/search-queries", searchQueriesRoute);
 app.use("/api/permissions", gettingPermissionIds);
 app.use("/api/processed", processedRoutes);
 app.use("/api/dmca", dmcaRoutes);
-app.use("/api/auth", authRoutes);  // Authentication routes
+app.use("/api/auth", authRoutes);
 
-// Export the app for Vercel's serverless functions
+// Export for Vercel Serverless Functions
 module.exports = app;
-
-// if (process.env.NODE_ENV !== "production") {
-//   app.listen(5000, () => {
-//     console.log("Server running locally on http://localhost:5000");
-//   });
-// } else {
-//   module.exports = app;
-// }

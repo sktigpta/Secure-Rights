@@ -7,10 +7,9 @@ scipy
 pillow
 requests
 
-# Deep learning
-torch==2.5.1+cu121
-torchvision==0.18.1+cu121
---find-links https://download.pytorch.org/whl/cu121
+# Deep learning (CPU-compatible)
+torch
+torchvision
 
 # Computer vision
 opencv-python

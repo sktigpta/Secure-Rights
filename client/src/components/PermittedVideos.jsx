@@ -109,7 +109,7 @@ const PermittedVideos = ({ onNotification }) => {
             <input
               type="text"
               className="flex-1 py-2.5 px-3.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
-              placeholder="Enter Video ID"
+              placeholder="Enter Video ID or URL"
               value={newVideoId}
               onChange={(e) => setNewVideoId(e.target.value)}
               onKeyDown={handleKeyPress}

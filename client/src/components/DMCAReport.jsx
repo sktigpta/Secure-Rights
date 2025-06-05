@@ -89,7 +89,8 @@ function DMCAReport() {
       for (let pair of formDataToSend.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       }
- const API_URL = import.meta.env.VITE_API_URL
+      
+      const API_URL = import.meta.env.VITE_API_URL
       const response = await axios.post(`${API_URL}/dmca/report`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -121,109 +122,116 @@ function DMCAReport() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#003366] to-[#001a33] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 shadow-xl border border-white/10">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center">
-              <Shield className="h-12 w-12 text-white" />
-              <h1 className="text-2xl font-bold text-white ml-4">Submit DMCA Report</h1>
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back
-              </button>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-              >
-                <Home className="h-5 w-5 mr-2" />
-                Dashboard
-              </button>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-sky-100 rounded-lg">
+                  <Shield className="h-6 w-6 text-sky-600" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-800">Submit DMCA Report</h1>
+                  <p className="text-sm text-gray-500 mt-1">Report copyright infringement</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="flex items-center px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors duration-200"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="flex items-center px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors duration-200"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Dashboard
+                </button>
+              </div>
             </div>
           </div>
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 rounded-lg flex items-center text-red-300">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              <span>{error}</span>
-            </div>
-          )}
+          <div className="p-6">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
+                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Video URL
-              </label>
-              <input
-                type="url"
-                name="videoUrl"
-                value={formData.videoUrl}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50 text-white placeholder-white/30"
-                placeholder="https://youtube.com/watch?v=..."
-                required
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Video URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  name="videoUrl"
+                  value={formData.videoUrl}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm"
+                  placeholder="https://youtube.com/watch?v=..."
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Video ID
-              </label>
-              <input
-                type="text"
-                name="videoId"
-                value={formData.videoId}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50 text-white placeholder-white/30"
-                placeholder="Video ID from YouTube URL"
-                required
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Video ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="videoId"
+                  value={formData.videoId}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm"
+                  placeholder="Video ID from YouTube URL"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Description of Infringing Content
-              </label>
-              <textarea
-                name="infringingContent"
-                value={formData.infringingContent}
-                onChange={handleInputChange}
-                rows="4"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50 text-white placeholder-white/30"
-                placeholder="Describe the infringing content..."
-                required
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description of Infringing Content <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="infringingContent"
+                  value={formData.infringingContent}
+                  onChange={handleInputChange}
+                  rows="4"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none"
+                  placeholder="Describe the infringing content..."
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Description of Original Content
-              </label>
-              <textarea
-                name="originalContent"
-                value={formData.originalContent}
-                onChange={handleInputChange}
-                rows="4"
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50 text-white placeholder-white/30"
-                placeholder="Describe your original content..."
-                required
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description of Original Content <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="originalContent"
+                  value={formData.originalContent}
+                  onChange={handleInputChange}
+                  rows="4"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none"
+                  placeholder="Describe your original content..."
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Proof of Ownership
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-white/10 border-dashed rounded-lg">
-                <div className="space-y-1 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-white/50" />
-                  <div className="flex text-sm text-white/70">
-                    <label className="relative cursor-pointer rounded-md font-medium text-blue-400 hover:text-blue-300">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Proof of Ownership
+                </label>
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors duration-200">
+                  <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <div className="text-sm text-gray-600">
+                    <label className="relative cursor-pointer rounded-md font-medium text-sky-600 hover:text-sky-500">
                       <span>Upload a file</span>
                       <input
                         type="file"
@@ -232,23 +240,27 @@ function DMCAReport() {
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                       />
                     </label>
+                    <span className="text-gray-500"> or drag and drop</span>
                   </div>
-                  <p className="text-xs text-white/50">
+                  <p className="text-xs text-gray-400 mt-1">
                     PDF, DOC, or images up to 10MB
                   </p>
+                  {formData.documents.proofOfOwnership && (
+                    <p className="text-xs text-sky-600 mt-2 font-medium">
+                      ✓ {formData.documents.proofOfOwnership.name}
+                    </p>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Identification Document
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-white/10 border-dashed rounded-lg">
-                <div className="space-y-1 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-white/50" />
-                  <div className="flex text-sm text-white/70">
-                    <label className="relative cursor-pointer rounded-md font-medium text-blue-400 hover:text-blue-300">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Identification Document
+                </label>
+                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-gray-300 transition-colors duration-200">
+                  <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <div className="text-sm text-gray-600">
+                    <label className="relative cursor-pointer rounded-md font-medium text-sky-600 hover:text-sky-500">
                       <span>Upload a file</span>
                       <input
                         type="file"
@@ -257,27 +269,35 @@ function DMCAReport() {
                         accept=".pdf,.jpg,.jpeg,.png"
                       />
                     </label>
+                    <span className="text-gray-500"> or drag and drop</span>
                   </div>
-                  <p className="text-xs text-white/50">
+                  <p className="text-xs text-gray-400 mt-1">
                     PDF or images up to 10MB
                   </p>
+                  {formData.documents.identification && (
+                    <p className="text-xs text-sky-600 mt-2 font-medium">
+                      ✓ {formData.documents.identification.name}
+                    </p>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-500 hover:bg-blue-400 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Submitting...' : 'Submit DMCA Report'}
-              <Shield className="h-4 w-4" />
-            </button>
-          </form>
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed text-sm"
+                >
+                  {loading ? 'Submitting...' : 'Submit DMCA Report'}
+                  <Shield className="h-4 w-4" />
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export default DMCAReport; 
+export default DMCAReport;

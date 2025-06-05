@@ -66,17 +66,43 @@ const deleteKnownChannel = async (req, res) => {
 };
 
 const addPermittedVideo = async (req, res) => {
-    const { videoId } = req.body;
-    if (!videoId) return res.status(400).json({ error: "Video ID is required" });
-  
+  let { videoId } = req.body;
+
+  if (!videoId) {
+    return res.status(400).json({ error: "Video ID or URL is required" });
+  }
+
+  // Extract video ID if a full URL is provided
+  const extractYouTubeId = (url) => {
     try {
-      const newDoc = await permittedVideosCollection.add({ videoId });
-      res.status(201).json({ message: "Video added successfully", id: newDoc.id });
-    } catch (error) {
-      console.error("Error adding permitted video:", error.message);
-      res.status(500).json({ error: "Failed to add video" });
+      const parsedUrl = new URL(url);
+      if (parsedUrl.hostname.includes("youtube.com")) {
+        return parsedUrl.searchParams.get("v");
+      }
+      if (parsedUrl.hostname === "youtu.be") {
+        return parsedUrl.pathname.slice(1); // Remove leading slash
+      }
+      return url; // If it's not a URL, assume it's already an ID
+    } catch (e) {
+      return url; // If invalid URL, treat it as ID
     }
   };
+
+  videoId = extractYouTubeId(videoId);
+
+  if (!videoId || videoId.length < 5) {
+    return res.status(400).json({ error: "Invalid YouTube video ID" });
+  }
+
+  try {
+    const newDoc = await permittedVideosCollection.add({ videoId });
+    res.status(201).json({ message: "Video added successfully", id: newDoc.id });
+  } catch (error) {
+    console.error("Error adding permitted video:", error.message);
+    res.status(500).json({ error: "Failed to add video" });
+  }
+};
+
   
   const addKnownChannel = async (req, res) => {
     const { channelId } = req.body;
