@@ -164,22 +164,22 @@ const QueryRow = ({ onNotification }) => {
       <div className="relative min-w-[250px]">
         <input
           type="text"
-          className="w-full py-2 pl-8 pr-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
+          className="w-full py-2 pl-3 pr-8 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
           placeholder={newQuery ? "" : displayedPlaceholder}
           value={newQuery}
           onChange={(e) => setNewQuery(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        {/* Logo inside input */}
-        <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2 group cursor-help">
-          <HelpCircle size={16} className="text-gray-400" />
+        {/* Logo inside input - right side */}
+        <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 group cursor-help">
+          <HelpCircle size={12} className="text-gray-400" />
           
-          {/* Tooltip - appears below the logo */}
-          <div className="absolute left-0 top-8 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+          {/* Tooltip - appears below the logo with high z-index */}
+          <div className="absolute right-0 top-6 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-500">
             <div className="font-medium mb-1">How it works:</div>
             <div>Add character names, dialogue, or movie titles. The system fetches videos from YouTube based on your provided queries.</div>
             {/* Arrow pointing up */}
-            <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-800 rotate-45"></div>
+            <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-800 rotate-45"></div>
           </div>
         </div>
       </div>
