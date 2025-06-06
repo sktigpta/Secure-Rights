@@ -1,169 +1,349 @@
+import os
 import cv2
-import numpy as np
-import logging
 import time
-from tqdm import tqdm
+import traceback
+import numpy as np
+import sys
 import gc
+import torch
+from datetime import datetime
+from tqdm import tqdm
+from firebase_admin import firestore
+from src.firebase.firebase_handler import FirebaseHandler
+from src.models.yolo_detector import YOLODetector
 
-def calculate_similarity(ref_detections, target_detections, weight_threshold=0.3):
+# ======================
+# Enhanced Timeline Functions
+# ======================
+
+def generate_detailed_timestamps(copied_frames, fps=30, min_duration=1.0):
     """
-    Calculate similarity between frames based on detected object classes
-    with improved weighting by detection confidence
+    Generate detailed timestamps with enhanced formatting and filtering
     
     Args:
-        ref_detections (list): Reference frame detections
-        target_detections (list): Target frame detections
-        weight_threshold (float): Minimum confidence for inclusion in similarity
+        copied_frames (list): Boolean array or frame indices of copied frames
+        fps (float): Frames per second of the video
+        min_duration (float): Minimum duration in seconds to include a segment
     
     Returns:
-        float: Similarity score from 0.0 to 1.0
+        list: Detailed timestamp information
     """
-    # Handle empty detections cases
-    if not ref_detections:
-        return 0.0
-    if not target_detections:
-        return 0.0
-    
-    # Extract classes with their confidence scores from reference frame
-    ref_classes = {}
-    for det in ref_detections:
-        cls_name = det.get('class', '')
-        confidence = det.get('confidence', 0.0)
-        if confidence > weight_threshold:
-            # Use maximum confidence if class appears multiple times
-            ref_classes[cls_name] = max(confidence, ref_classes.get(cls_name, 0))
-    
-    # Extract classes with their confidence scores from target frame
-    target_classes = {}
-    for det in target_detections:
-        cls_name = det.get('class', '')
-        confidence = det.get('confidence', 0.0)
-        if confidence > weight_threshold:
-            # Use maximum confidence if class appears multiple times
-            target_classes[cls_name] = max(confidence, target_classes.get(cls_name, 0))
-    
-    # If either has no valid classes after filtering, similarity is zero
-    if not ref_classes or not target_classes:
-        return 0.0
-    
-    # Calculate weighted intersection score
-    intersection_score = 0
-    for cls_name, ref_conf in ref_classes.items():
-        if cls_name in target_classes:
-            # Weight match by minimum confidence between reference and target
-            match_weight = min(ref_conf, target_classes[cls_name])
-            intersection_score += match_weight
-    
-    # Calculate union score (sum of reference confidence values)
-    union_score = sum(ref_classes.values())
-    
-    # Return normalized similarity score
-    return intersection_score / union_score if union_score > 0 else 0
-
-def compare_frames(target_frames, reference_data, yolo, threshold=0.5, batch_size=4):
-    """
-    Compare target frames against reference frames with optimized GPU memory usage
-    
-    Args:
-        target_frames (list): List of target frame images or paths
-        reference_data (list): Detections from reference frames
-        yolo (YOLODetector): YOLO detector instance
-        threshold (float): Similarity threshold for match declaration
-        batch_size (int): Batch size for processing frames
-        
-    Returns:
-        list: Boolean flags indicating if each frame was copied
-    """
-    # Validate inputs
-    if not target_frames:
-        logging.warning("No target frames provided for comparison")
+    if not copied_frames:
         return []
     
-    if not reference_data:
-        logging.warning("No reference data provided for comparison")
-        return [False] * len(target_frames)
+    # Convert boolean array to frame indices if needed
+    if all(isinstance(x, bool) for x in copied_frames):
+        copied_frame_indices = [i for i, is_copied in enumerate(copied_frames) if is_copied]
+    else:
+        copied_frame_indices = copied_frames
     
-    # Initialize result array
-    is_copied = []
+    if not copied_frame_indices:
+        return []
+        
+    # Sort and deduplicate frames
+    copied_frame_indices = sorted(set(copied_frame_indices))
     
-    # Process frames in batches with progress tracking
-    with tqdm(total=len(target_frames), desc="Comparing Frames", unit="frame") as pbar:
-        for i in range(0, len(target_frames), batch_size):
-            try:
-                # Get current batch
-                batch = target_frames[i:i+batch_size]
-                batch_frames = []
-                
-                # Load frames if paths were provided
-                for item in batch:
-                    if isinstance(item, str):  # Path to image
-                        frame = cv2.imread(item)
-                        if frame is None:
-                            logging.warning(f"Could not read frame: {item}")
-                            is_copied.append(False)
-                            pbar.update(1)
-                            continue
-                        batch_frames.append(frame)
-                    else:  # Already a frame
-                        batch_frames.append(item)
-                
-                # Skip empty batch
-                if not batch_frames:
-                    pbar.update(len(batch))
-                    continue
-                
-                # Run detection on batch
-                batch_detections = yolo.detect(batch_frames)
-                
-                # Compare each frame's detections with reference data
-                for frame_idx, target_detections in enumerate(batch_detections):
-                    try:
-                        # Calculate similarities against all reference frames
-                        similarities = [
-                            calculate_similarity(ref, target_detections) 
-                            for ref in reference_data
-                        ]
-                        
-                        # Find maximum similarity
-                        max_similarity = max(similarities) if similarities else 0
-                        
-                        # Determine if this frame matches any reference frame
-                        is_copied.append(max_similarity >= threshold)
-                        
-                        # Update progress bar information
-                        if frame_idx % 10 == 0 or frame_idx == len(batch_detections) - 1:
-                            pbar.set_postfix({
-                                "Max Sim": f"{max_similarity:.2f}", 
-                                "Matched": f"{sum(is_copied)}/{len(is_copied)}"
-                            })
-                    except Exception as e:
-                        is_copied.append(False)
-                        logging.error(f"Error comparing frame {i + frame_idx}: {str(e)}")
-                    
-                    # Update progress bar
-                    pbar.update(1)
-                
-                # Explicitly release memory before next batch
-                del batch_frames
-                del batch_detections
-                gc.collect()
-                
-                # Force GPU memory cleanup if available
-                if hasattr(yolo, 'gpu_available') and yolo.gpu_available:
-                    if hasattr(torch, 'cuda') and torch.cuda.is_available():
-                        import torch
-                        torch.cuda.empty_cache()
+    timestamps = []
+    current_start = current_end = copied_frame_indices[0]
+    
+    # Group consecutive frames into segments
+    for frame in copied_frame_indices[1:]:
+        if frame == current_end + 1:
+            current_end = frame
+        else:
+            # End of current segment
+            segment_duration = (current_end - current_start + 1) / fps
+            if segment_duration >= min_duration:  # Only include segments longer than min_duration
+                timestamps.append({
+                    'start_frame': current_start,
+                    'end_frame': current_end,
+                    'start_time': frame_to_detailed_time(current_start, fps),
+                    'end_time': frame_to_detailed_time(current_end, fps),
+                    'duration': format_duration(segment_duration),
+                    'duration_seconds': round(segment_duration, 2),
+                    'frame_count': current_end - current_start + 1
+                })
+            current_start = current_end = frame
+    
+    # Always add the final segment
+    segment_duration = (current_end - current_start + 1) / fps
+    if segment_duration >= min_duration:
+        timestamps.append({
+            'start_frame': current_start,
+            'end_frame': current_end,
+            'start_time': frame_to_detailed_time(current_start, fps),
+            'end_time': frame_to_detailed_time(current_end, fps),
+            'duration': format_duration(segment_duration),
+            'duration_seconds': round(segment_duration, 2),
+            'frame_count': current_end - current_start + 1
+        })
+    
+    return timestamps
+
+def frame_to_detailed_time(frame_number, fps):
+    """Convert frame index to detailed timestamp with milliseconds"""
+    total_seconds = frame_number / fps
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    seconds = int(total_seconds % 60)
+    milliseconds = int((total_seconds % 1) * 1000)
+    
+    if hours > 0:
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+    else:
+        return f"{minutes:02d}:{seconds:02d}.{milliseconds:03d}"
+
+def format_duration(duration_seconds):
+    """Format duration in a human-readable way"""
+    if duration_seconds < 60:
+        return f"{duration_seconds:.1f}s"
+    elif duration_seconds < 3600:
+        minutes = int(duration_seconds // 60)
+        seconds = duration_seconds % 60
+        return f"{minutes}m {seconds:.1f}s"
+    else:
+        hours = int(duration_seconds // 3600)
+        minutes = int((duration_seconds % 3600) // 60)
+        seconds = duration_seconds % 60
+        return f"{hours}h {minutes}m {seconds:.1f}s"
+
+def print_detailed_timeline(timestamps, video_id, copy_percent, total_frames, fps):
+    """Print detailed timeline information to console"""
+    print(f"\n{'='*80}")
+    print(f"DETAILED TIMELINE ANALYSIS FOR VIDEO: {video_id}")
+    print(f"{'='*80}")
+    print(f"Overall Copy Percentage: {copy_percent:.2f}%")
+    print(f"Total Frames: {total_frames}")
+    print(f"Video FPS: {fps:.2f}")
+    print(f"Detected Segments: {len(timestamps)}")
+    
+    if not timestamps:
+        print("No copied segments detected!")
+        return
+    
+    # Calculate total copied duration
+    total_copied_duration = sum(ts['duration_seconds'] for ts in timestamps)
+    total_video_duration = total_frames / fps
+    
+    print(f"Total Copied Duration: {format_duration(total_copied_duration)}")
+    print(f"Total Video Duration: {format_duration(total_video_duration)}")
+    print(f"Duration Percentage: {(total_copied_duration/total_video_duration)*100:.1f}%")
+    
+    print(f"\n{'='*80}")
+    print(f"COPIED SEGMENTS TIMELINE:")
+    print(f"{'='*80}")
+    print(f"{'#':<3} {'Start Time':<12} {'End Time':<12} {'Duration':<10} {'Frames':<8} {'%':<6}")
+    print(f"{'-'*80}")
+    
+    for i, ts in enumerate(timestamps, 1):
+        percentage = (ts['frame_count'] / total_frames) * 100
+        print(f"{i:<3} {ts['start_time']:<12} {ts['end_time']:<12} {ts['duration']:<10} "
+              f"{ts['frame_count']:<8} {percentage:.1f}%")
+    
+    print(f"{'-'*80}")
+    print(f"Total segments: {len(timestamps)}")
+    print(f"Average segment duration: {format_duration(total_copied_duration/len(timestamps))}")
+    print(f"Longest segment: {format_duration(max(ts['duration_seconds'] for ts in timestamps))}")
+    print(f"Shortest segment: {format_duration(min(ts['duration_seconds'] for ts in timestamps))}")
+    print(f"{'='*80}\n")
+
+def save_timeline_to_file(timestamps, video_id, copy_percent, total_frames, fps, output_dir="results"):
+    """Save detailed timeline to a text file"""
+    os.makedirs(output_dir, exist_ok=True)
+    
+    filename = f"{output_dir}/{video_id}_timeline_analysis.txt"
+    
+    with open(filename, 'w') as f:
+        f.write(f"DETAILED TIMELINE ANALYSIS\n")
+        f.write(f"Video ID: {video_id}\n")
+        f.write(f"Analysis Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"="*80 + "\n\n")
+        
+        f.write(f"SUMMARY:\n")
+        f.write(f"Overall Copy Percentage: {copy_percent:.2f}%\n")
+        f.write(f"Total Frames: {total_frames}\n")
+        f.write(f"Video FPS: {fps:.2f}\n")
+        f.write(f"Detected Segments: {len(timestamps)}\n")
+        
+        if timestamps:
+            total_copied_duration = sum(ts['duration_seconds'] for ts in timestamps)
+            total_video_duration = total_frames / fps
             
-            except Exception as e:
-                # Mark remaining frames in batch as not copied
-                for _ in range(len(batch)):
-                    is_copied.append(False)
-                    pbar.update(1)
-                logging.error(f"Batch processing error: {str(e)}")
+            f.write(f"Total Copied Duration: {format_duration(total_copied_duration)}\n")
+            f.write(f"Total Video Duration: {format_duration(total_video_duration)}\n")
+            f.write(f"Duration Percentage: {(total_copied_duration/total_video_duration)*100:.1f}%\n\n")
+            
+            f.write(f"COPIED SEGMENTS:\n")
+            f.write(f"{'#':<3} {'Start Time':<15} {'End Time':<15} {'Duration':<12} {'Frames':<8} {'%':<6}\n")
+            f.write(f"{'-'*80}\n")
+            
+            for i, ts in enumerate(timestamps, 1):
+                percentage = (ts['frame_count'] / total_frames) * 100
+                f.write(f"{i:<3} {ts['start_time']:<15} {ts['end_time']:<15} {ts['duration']:<12} "
+                       f"{ts['frame_count']:<8} {percentage:.1f}%\n")
+            
+            f.write(f"\nSTATISTICS:\n")
+            f.write(f"Average segment duration: {format_duration(total_copied_duration/len(timestamps))}\n")
+            f.write(f"Longest segment: {format_duration(max(ts['duration_seconds'] for ts in timestamps))}\n")
+            f.write(f"Shortest segment: {format_duration(min(ts['duration_seconds'] for ts in timestamps))}\n")
+        else:
+            f.write(f"No copied segments detected!\n")
     
-    # Log match statistics
-    match_count = sum(is_copied)
-    match_percent = (match_count / len(target_frames)) * 100 if target_frames else 0
-    logging.info(f"Matched {match_count}/{len(target_frames)} frames ({match_percent:.2f}%)")
-    
-    return is_copied
+    print(f"Timeline analysis saved to: {filename}")
+    return filename
+
+# ======================
+# Enhanced Video Processing Function
+# ======================
+
+def process_video_with_detailed_timeline(firebase, video, reference_data, yolo):
+    """Enhanced video processing with detailed timeline output"""
+    video_id = video.get('id')
+    video_path = None
+    target_frames = []
+
+    try:
+        # Update status to processing
+        firebase.mark_as_processing(video_id)
+        print(f"\n{'='*40}\nProcessing video: {video_id}\n{'='*40}")
+
+        # Download video
+        try:
+            from src.processing.downloader import download_video
+            video_path = download_video(
+                f"https://www.youtube.com/watch?v={video_id}",
+                video_id
+            )
+            
+            if not video_path or not os.path.exists(video_path):
+                raise FileNotFoundError(f"Failed to download video {video_id}")
+                
+            print(f"Downloaded video to {video_path}")
+        except Exception as download_error:
+            raise Exception(f"Download failed: {download_error}")
+
+        # Get video info
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                raise ValueError(f"Could not open video file: {video_path}")
+                
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            duration = total_frames / fps if fps > 0 else 0
+            cap.release()
+            
+            print(f"Video info: {total_frames} frames at {fps:.2f} FPS ({duration:.1f}s)")
+        except Exception as video_info_error:
+            raise Exception(f"Failed to read video info: {video_info_error}")
+
+        # Extract frames
+        try:
+            from src.processing.frame_extractor import extract_frames
+            target_frames = extract_frames(
+                video_path,
+                output_dir=f"assets/frames/{video_id}",
+                frame_interval=1,  # Extract every frame for detailed analysis
+                target_size=(640, 360)
+            )
+            
+            if not target_frames:
+                raise ValueError("No frames extracted from video")
+                
+            print(f"Extracted {len(target_frames)} frames")
+        except Exception as extraction_error:
+            raise Exception(f"Frame extraction failed: {extraction_error}")
+
+        # Compare frames using YOLO
+        try:
+            from src.processing.compare_results import compare_frames
+            copied_frames = compare_frames(
+                target_frames,
+                reference_data, 
+                yolo,
+                threshold=0.75,  # Your similarity threshold
+                batch_size=8
+            )
+            
+            if not copied_frames:
+                raise ValueError("Frame comparison failed")
+        except Exception as comparison_error:
+            raise Exception(f"Comparison failed: {comparison_error}")
+
+        # Calculate results
+        matched_frames = sum(copied_frames)
+        copy_percent = (matched_frames / len(target_frames)) * 100 if target_frames else 0
+        
+        print(f"\nYOLO Analysis Results:")
+        print(f"Match percentage: {copy_percent:.2f}% ({matched_frames}/{len(target_frames)} frames)")
+        
+        # Generate detailed timestamps
+        detailed_timestamps = generate_detailed_timestamps(copied_frames, fps, min_duration=0.5)
+        
+        # Print detailed timeline to console
+        print_detailed_timeline(detailed_timestamps, video_id, copy_percent, len(target_frames), fps)
+        
+        # Save timeline to file
+        timeline_file = save_timeline_to_file(detailed_timestamps, video_id, copy_percent, len(target_frames), fps)
+        
+        # Prepare simplified timestamps for Firebase (backward compatibility)
+        simple_timestamps = [
+            {
+                'start': ts['start_time'].split('.')[0],  # Remove milliseconds for Firebase
+                'end': ts['end_time'].split('.')[0]
+            }
+            for ts in detailed_timestamps
+        ]
+
+        # Save results to Firebase
+        firebase.save_results(video_id, {
+            'video_id': video_id,
+            'status': 'completed',
+            'copied': copy_percent >= 75,  # Your threshold
+            'copy_percentage': round(copy_percent, 2),
+            'timestamps': simple_timestamps,
+            'detailed_analysis': {
+                'total_segments': len(detailed_timestamps),
+                'total_copied_duration': sum(ts['duration_seconds'] for ts in detailed_timestamps),
+                'timeline_file': timeline_file
+            },
+            'model_used': "YOLOv8",
+            'processed_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        print(f"\nSuccessfully processed {video_id}")
+        print(f"Results saved to Firebase and timeline file: {timeline_file}")
+
+    except Exception as e:
+        print(f"\nProcessing failed: {e}")
+        firebase.mark_as_failed(video_id, str(e))
+        traceback.print_exc()
+    finally:
+        cleanup(video_path, target_frames)
+        clear_gpu_memory()
+        print(f"\n{'='*40}\n")
+
+# Keep all your existing utility functions (cleanup, clear_gpu_memory, etc.)
+def cleanup(video_path=None, frames=None):
+    """Clean temporary files with improved error handling"""
+    try:
+        if video_path and os.path.exists(video_path):
+            os.remove(video_path)
+            print(f"Removed temporary video: {video_path}")
+            
+        if frames:
+            removed_count = 0
+            for frame in frames:
+                if frame and os.path.exists(frame):
+                    os.remove(frame)
+                    removed_count += 1
+            if removed_count > 0:
+                print(f"Removed {removed_count} temporary frame files")
+    except Exception as e:
+        print(f"Cleanup error: {e}")
+
+def clear_gpu_memory():
+    """Clear GPU memory if available"""
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        gc.collect()
