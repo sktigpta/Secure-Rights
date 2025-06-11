@@ -152,89 +152,92 @@ The SecureRights.app project is built on a robust, multi-component architecture 
 ## 🔄 Use Case Flow Diagram
 
 ```mermaid
-graph TD
-    A["&nbsp;&nbsp;&nbsp;&nbsp;👤 Admin User&nbsp;&nbsp;&nbsp;&nbsp;"] -->|"&nbsp;&nbsp;🖥️ Monitors Dashboard&nbsp;&nbsp;"| B["&nbsp;&nbsp;&nbsp;&nbsp;📊 Dashboard System&nbsp;&nbsp;&nbsp;&nbsp;"]
-    A -->|"&nbsp;&nbsp;🔍 Manages Search Queries&nbsp;&nbsp;"| C["&nbsp;&nbsp;&nbsp;&nbsp;🔎 Search Query Manager&nbsp;&nbsp;&nbsp;&nbsp;"]
+flowchart TD
+    %% Layer 1: User Interface
+    A[Admin User] -->|Monitors Dashboard| B[Dashboard System]
+    A -->|Manages Search Queries| C[Search Query Manager]
     
-    B -->|"&nbsp;&nbsp;📡 Sends API Queries&nbsp;&nbsp;"| D["&nbsp;&nbsp;&nbsp;&nbsp;🎬 YouTube API&nbsp;&nbsp;&nbsp;&nbsp;"]
-    D -->|"&nbsp;&nbsp;⬇️ Fetches Video Data&nbsp;&nbsp;"| E["&nbsp;&nbsp;&nbsp;&nbsp;🎞️ Video Processor&nbsp;&nbsp;&nbsp;&nbsp;"]
-    E -->|"&nbsp;&nbsp;🖼️ Extracts Content&nbsp;&nbsp;"| F["&nbsp;&nbsp;&nbsp;&nbsp;🤖 AI Detection Engine&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Layer 2: Data Collection
+    C -->|Sends API Queries| D[YouTube API]
+    B -->|Sends API Queries| D
+    D -->|Fetches Video Data| E[Video Processor]
     
-    F -->|"&nbsp;&nbsp;📝 Matches Against&nbsp;&nbsp;"| G["&nbsp;&nbsp;&nbsp;&nbsp;🗄️ Reference Database&nbsp;&nbsp;&nbsp;&nbsp;"]
-    F -->|"&nbsp;&nbsp;❌ No Match Found&nbsp;&nbsp;"| H["&nbsp;&nbsp;&nbsp;&nbsp;✅ Whitelist Handler&nbsp;&nbsp;&nbsp;&nbsp;"]
-    F -->|"&nbsp;&nbsp;⚠️ Match Detected&nbsp;&nbsp;"| I["&nbsp;&nbsp;&nbsp;&nbsp;📜 DMCA Generator&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Layer 3: Content Analysis
+    E -->|Extracts Content| F[AI Detection Engine]
+    F -->|Matches Against| G[(Reference Database)]
     
-    I -->|"&nbsp;&nbsp;📤 Sends Takedown Request&nbsp;&nbsp;"| J["&nbsp;&nbsp;&nbsp;&nbsp;🎯 YouTube Takedown API&nbsp;&nbsp;&nbsp;&nbsp;"]
-    J -->|"&nbsp;&nbsp;🗑️ Content Removed&nbsp;&nbsp;"| K["&nbsp;&nbsp;&nbsp;&nbsp;✔️ Removal Confirmation&nbsp;&nbsp;&nbsp;&nbsp;"]
-    K -->|"&nbsp;&nbsp;📝 Updates Activity&nbsp;&nbsp;"| L["&nbsp;&nbsp;&nbsp;&nbsp;📋 Audit & Reporting&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Layer 4: Decision Paths
+    F -->|No Match Found| H[Whitelist Handler]
+    F -->|Match Detected| I[DMCA Generator]
     
-    H -->|"&nbsp;&nbsp;📊 Log Clean Content&nbsp;&nbsp;"| L
+    %% Layer 5: Takedown Process
+    I -->|Sends Takedown Request| J[YouTube Takedown API]
+    J -->|Content Removed| K[Removal Confirmation]
     
-    %% Uniform Elegant Styling
-    style A fill:#667eea,stroke:#4c63d2,stroke-width:4px,color:#fff,rx:15,ry:15
-    style B fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style C fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style D fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style E fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style F fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style G fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style H fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style I fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style J fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style K fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    style L fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
+    %% Layer 6: Reporting
+    K -->|Updates Activity| L[Audit & Reporting]
+    H -->|Log Clean Content| L
+
+    %% Styling (minimal monochrome)
+    classDef default stroke:#333,stroke-width:1.5px,color:#fff
+    classDef database stroke-dasharray: 5 5
+
+    class G database
+    class A,B,C,D,E,F,G,H,I,J,K,L default
 ```
 
 ## 🏗️ Complete System Architecture & Integration
 
 ```mermaid
 flowchart TD
-    %% Frontend Layer
-    A["&nbsp;&nbsp;&nbsp;&nbsp;🌐 Client Browser&nbsp;&nbsp;&nbsp;&nbsp;"] <-->|"&nbsp;&nbsp;HTTPS/WebSocket&nbsp;&nbsp;"| B["&nbsp;&nbsp;&nbsp;&nbsp;⚛️ React Frontend App&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Layer 1: Client-Server Communication
+    A[Client Browser] <-->|HTTPS/WebSocket| B[React Frontend]
+    B <-->|REST API| C[Express.js Backend]
+    C <-->|NoSQL Queries| D[(Firebase Firestore)]
     
-    %% Backend Communication
-    B <-->|"&nbsp;&nbsp;REST API&nbsp;&nbsp;"| C["&nbsp;&nbsp;&nbsp;&nbsp;🔧 Express.js Backend&nbsp;&nbsp;&nbsp;&nbsp;"]
-    C <-->|"&nbsp;&nbsp;NoSQL Queries&nbsp;&nbsp;"| D[("&nbsp;&nbsp;&nbsp;&nbsp;🔥 Firebase Firestore&nbsp;&nbsp;&nbsp;&nbsp;")]
+    %% Layer 2: Data Collection
+    C -->|API Calls| E[YouTube Data API]
+    E -->|Video Metadata| F[Video Metadata Collector]
+    F -->|Store Data| G[(youtube_videos)]
     
-    %% External API Integration
-    C -->|"&nbsp;&nbsp;API Calls&nbsp;&nbsp;"| E["&nbsp;&nbsp;&nbsp;&nbsp;📺 YouTube Data API&nbsp;&nbsp;&nbsp;&nbsp;"]
-    E -->|"&nbsp;&nbsp;Video Metadata&nbsp;&nbsp;"| F["&nbsp;&nbsp;&nbsp;&nbsp;📊 Video Metadata Collector&nbsp;&nbsp;&nbsp;&nbsp;"]
-    F -->|"&nbsp;&nbsp;Store Data&nbsp;&nbsp;"| G[("&nbsp;&nbsp;&nbsp;&nbsp;📂 youtube_videos Collection&nbsp;&nbsp;&nbsp;&nbsp;")]
+    %% Layer 3: AI Processing
+    H[AI Processing Engine] <-->|Read/Write| D
+    H -->|Poll New Videos| I[Video Queue Processor]
+    I -->|Download & Analyze| J[Video Content Processor]
+    J -->|Object Detection| K[YOLOv8 Engine]
+    K -->|Similarity Matching| L[Content Comparison]
+    L -->|Store Results| M[(processed_results)]
     
-    %% AI Processing Pipeline
-    H["&nbsp;&nbsp;&nbsp;&nbsp;🤖 AI Processing Engine&nbsp;&nbsp;&nbsp;&nbsp;"] <-->|"&nbsp;&nbsp;Read/Write&nbsp;&nbsp;"| D
-    H -->|"&nbsp;&nbsp;Poll New Videos&nbsp;&nbsp;"| I["&nbsp;&nbsp;&nbsp;&nbsp;🔄 Video Queue Processor&nbsp;&nbsp;&nbsp;&nbsp;"]
-    I -->|"&nbsp;&nbsp;Download & Analyze&nbsp;&nbsp;"| J["&nbsp;&nbsp;&nbsp;&nbsp;🎬 Video Content Processor&nbsp;&nbsp;&nbsp;&nbsp;"]
-    J -->|"&nbsp;&nbsp;Object Detection&nbsp;&nbsp;"| K["&nbsp;&nbsp;&nbsp;&nbsp;🎯 YOLOv8 Detection Engine&nbsp;&nbsp;&nbsp;&nbsp;"]
-    K -->|"&nbsp;&nbsp;Similarity Matching&nbsp;&nbsp;"| L["&nbsp;&nbsp;&nbsp;&nbsp;📈 Content Comparison Algorithm&nbsp;&nbsp;&nbsp;&nbsp;"]
-    L -->|"&nbsp;&nbsp;Store Results&nbsp;&nbsp;"| M[("&nbsp;&nbsp;&nbsp;&nbsp;📋 processed_collection&nbsp;&nbsp;&nbsp;&nbsp;")]
+    %% Layer 4: Analytics
+    B -->|Data Queries| N[Analytics Dashboard]
+    N -->|Fetch Analytics| M
+    N -->|Real-time Updates| O[Live Monitoring]
     
-    %% Dashboard & Visualization
-    B -->|"&nbsp;&nbsp;Data Queries&nbsp;&nbsp;"| N["&nbsp;&nbsp;&nbsp;&nbsp;📊 Analytics Dashboard&nbsp;&nbsp;&nbsp;&nbsp;"]
-    N -->|"&nbsp;&nbsp;Fetch Analytics&nbsp;&nbsp;"| M
-    N -->|"&nbsp;&nbsp;Real-time Updates&nbsp;&nbsp;"| O["&nbsp;&nbsp;&nbsp;&nbsp;📡 Live Monitoring System&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Layer 5: Actions
+    O -->|User Decisions| P[Legal Action Handler]
+    P -->|Auto-Generate| Q[DMCA Generator]
+    P -->|Manual Review| R[Whitelist Manager]
     
-    %% User Actions & Automation
-    O -->|"&nbsp;&nbsp;User Decisions&nbsp;&nbsp;"| P["&nbsp;&nbsp;&nbsp;&nbsp;⚖️ Legal Action Handler&nbsp;&nbsp;&nbsp;&nbsp;"]
-    P -->|"&nbsp;&nbsp;Auto-Generate&nbsp;&nbsp;"| Q["&nbsp;&nbsp;&nbsp;&nbsp;📜 DMCA Request Generator&nbsp;&nbsp;&nbsp;&nbsp;"]
-    P -->|"&nbsp;&nbsp;Manual Review&nbsp;&nbsp;"| R["&nbsp;&nbsp;&nbsp;&nbsp;👁️ Content Whitelist Manager&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Layer 6: External
+    Q -->|Submit Requests| S[Platform Takedown APIs]
+    Q -->|Email Notifications| T[Legal Team Alerts]
     
-    %% External Integrations
-    Q -->|"&nbsp;&nbsp;Submit Requests&nbsp;&nbsp;"| S["&nbsp;&nbsp;&nbsp;&nbsp;🎯 Platform Takedown APIs&nbsp;&nbsp;&nbsp;&nbsp;"]
-    Q -->|"&nbsp;&nbsp;Email Notifications&nbsp;&nbsp;"| T["&nbsp;&nbsp;&nbsp;&nbsp;📧 Legal Team Notifications&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Layer 7: Monitoring
+    H -->|System Logs| U[Activity Logger]
+    S -->|Success/Failure| U
+    U -->|Generate Reports| V[Compliance Reports]
     
-    %% Monitoring & Logging
-    H -->|"&nbsp;&nbsp;System Logs&nbsp;&nbsp;"| U["&nbsp;&nbsp;&nbsp;&nbsp;📝 Activity Logger&nbsp;&nbsp;&nbsp;&nbsp;"]
-    S -->|"&nbsp;&nbsp;Success/Failure&nbsp;&nbsp;"| U
-    U -->|"&nbsp;&nbsp;Generate Reports&nbsp;&nbsp;"| V["&nbsp;&nbsp;&nbsp;&nbsp;📊 Compliance Reports&nbsp;&nbsp;&nbsp;&nbsp;"]
+    %% Styling
+    classDef frontend fill:#4A89DC,stroke:#3B7DDD,color:white
+    classDef backend fill:#967ADC,stroke:#7B5EC6,color:white
+    classDef database fill:#37BC9B,stroke:#2FA285,color:white
+    classDef api fill:#F6BB42,stroke:#E6A23C,color:black
+    classDef ai fill:#E9573F,stroke:#D9433A,color:white
+    classDef analytics fill:#3BAFDA,stroke:#2F96BA,color:white
+    classDef legal fill:#D770AD,stroke:#C45F9B,color:white
     
-    %% Elegant Uniform Styling with Rounded Corners
-    classDef default fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:15,ry:15
-    classDef database fill:#667eea,stroke:#4c63d2,stroke-width:3px,color:#fff,rx:20,ry:20
-    
-    %% Apply Styles to All Nodes
-    class A,B,C,E,F,H,I,J,K,L,N,O,P,Q,R,S,T,U,V default
-    class D,G,M database
+    %% Apply styles
+    class A,B front
 ```
 
 ## 🎯 Key System Components
