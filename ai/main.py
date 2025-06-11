@@ -6,6 +6,7 @@ import numpy as np
 import sys
 import gc
 import torch
+import subprocess
 from datetime import datetime
 from tqdm import tqdm
 from firebase_admin import firestore
@@ -29,17 +30,99 @@ YOLO_MODEL = "src/models/pretrained/yolov8n.pt"
 # Utility Functions
 # ======================
 def create_required_directories():
-    """Create necessary directories including results directory"""
+    """Create necessary directories (removed results directory)"""
     required_dirs = [
         'assets/frames',
         'assets/videos',
-        'processing/queue',
-        'results'  # For timeline files
+        'processing/queue'
     ]
     
     for directory in required_dirs:
         os.makedirs(directory, exist_ok=True)
         print(f"Ensured directory exists: {directory}")
+
+def download_video_with_ytdlp(url, output_name="sample_video"):
+    """Download video using yt-dlp with specific naming"""
+    try:
+        # Ensure assets/videos directory exists
+        os.makedirs("assets/videos", exist_ok=True)
+        
+        # Command to download with specific naming
+        cmd = [
+            "yt-dlp",
+            "-o", f"assets/videos/{output_name}.%(ext)s",
+            url
+        ]
+        
+        print(f"Downloading video from: {url}")
+        print(f"Command: {' '.join(cmd)}")
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        print("Download completed successfully!")
+        
+        # Find the downloaded file
+        for ext in ['mp4', 'webm', 'mkv', 'avi']:
+            potential_path = f"assets/videos/{output_name}.{ext}"
+            if os.path.exists(potential_path):
+                return potential_path
+        
+        raise FileNotFoundError("Downloaded video file not found")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"yt-dlp error: {e}")
+        print(f"stdout: {e.stdout}")
+        print(f"stderr: {e.stderr}")
+        raise Exception(f"Failed to download video: {e}")
+    except Exception as e:
+        print(f"Download error: {e}")
+        raise
+
+def setup_reference_video():
+    """Setup reference video by checking if exists, or prompting for URL/path"""
+    if os.path.exists(REFERENCE_VIDEO_PATH):
+        print(f"Reference video found: {REFERENCE_VIDEO_PATH}")
+        return REFERENCE_VIDEO_PATH
+    
+    print(f"Reference video not found at: {REFERENCE_VIDEO_PATH}")
+    print("\nPlease provide the reference video:")
+    print("1. Enter a YouTube URL to download")
+    print("2. Enter a local file path")
+    print("3. Type 'exit' to quit")
+    
+    while True:
+        user_input = input("\nEnter URL or file path: ").strip()
+        
+        if user_input.lower() == 'exit':
+            print("Exiting...")
+            sys.exit(0)
+        
+        # Check if it's a URL
+        if user_input.startswith(('http://', 'https://', 'www.')):
+            try:
+                downloaded_path = download_video_with_ytdlp(user_input, "sample_video")
+                print(f"Video downloaded to: {downloaded_path}")
+                return downloaded_path
+            except Exception as e:
+                print(f"Failed to download: {e}")
+                continue
+        
+        # Check if it's a local file path
+        elif os.path.exists(user_input):
+            # Copy to expected location
+            import shutil
+            try:
+                os.makedirs("assets/videos", exist_ok=True)
+                dest_path = REFERENCE_VIDEO_PATH
+                shutil.copy2(user_input, dest_path)
+                print(f"Video copied to: {dest_path}")
+                return dest_path
+            except Exception as e:
+                print(f"Failed to copy file: {e}")
+                continue
+        
+        else:
+            print(f"Invalid input. File not found: {user_input}")
+            print("Please enter a valid YouTube URL or existing file path.")
 
 def generate_timestamps(copied_frames, fps=30, min_duration=0.5):
     """
@@ -57,7 +140,7 @@ def generate_timestamps(copied_frames, fps=30, min_duration=0.5):
         return []
     
     # Convert boolean array to frame indices if needed
-    if all(isinstance(x, bool) for x in copied_frames):
+    if all(isinstance(x, (bool, np.bool_)) for x in copied_frames):
         copied_frame_indices = [i for i, is_copied in enumerate(copied_frames) if is_copied]
     else:
         copied_frame_indices = copied_frames
@@ -80,13 +163,13 @@ def generate_timestamps(copied_frames, fps=30, min_duration=0.5):
             segment_duration = (current_end - current_start + 1) / fps
             if segment_duration >= min_duration:  # Only include segments longer than min_duration
                 timestamps.append({
-                    'start_frame': current_start,
-                    'end_frame': current_end,
+                    'start_frame': int(current_start),
+                    'end_frame': int(current_end),
                     'start': frame_to_time(current_start, fps),
                     'end': frame_to_time(current_end, fps),
                     'duration': format_duration(segment_duration),
-                    'duration_seconds': round(segment_duration, 2),
-                    'frame_count': current_end - current_start + 1
+                    'duration_seconds': float(round(segment_duration, 2)),
+                    'frame_count': int(current_end - current_start + 1)
                 })
             current_start = current_end = frame
     
@@ -94,13 +177,13 @@ def generate_timestamps(copied_frames, fps=30, min_duration=0.5):
     segment_duration = (current_end - current_start + 1) / fps
     if segment_duration >= min_duration:
         timestamps.append({
-            'start_frame': current_start,
-            'end_frame': current_end,
+            'start_frame': int(current_start),
+            'end_frame': int(current_end),
             'start': frame_to_time(current_start, fps),
             'end': frame_to_time(current_end, fps),
             'duration': format_duration(segment_duration),
-            'duration_seconds': round(segment_duration, 2),
-            'frame_count': current_end - current_start + 1
+            'duration_seconds': float(round(segment_duration, 2)),
+            'frame_count': int(current_end - current_start + 1)
         })
     
     return timestamps
@@ -172,51 +255,6 @@ def print_detailed_timeline(timestamps, video_id, copy_percent, total_frames, fp
     print(f"Shortest segment: {format_duration(min(ts['duration_seconds'] for ts in timestamps))}")
     print(f"{'='*80}\n")
 
-def save_timeline_to_file(timestamps, video_id, copy_percent, total_frames, fps, output_dir="results"):
-    """Save detailed timeline to a text file"""
-    os.makedirs(output_dir, exist_ok=True)
-    
-    filename = f"{output_dir}/{video_id}_timeline_analysis.txt"
-    
-    with open(filename, 'w') as f:
-        f.write(f"DETAILED TIMELINE ANALYSIS\n")
-        f.write(f"Video ID: {video_id}\n")
-        f.write(f"Analysis Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"="*80 + "\n\n")
-        
-        f.write(f"SUMMARY:\n")
-        f.write(f"Overall Copy Percentage: {copy_percent:.2f}%\n")
-        f.write(f"Total Frames: {total_frames}\n")
-        f.write(f"Video FPS: {fps:.2f}\n")
-        f.write(f"Detected Segments: {len(timestamps)}\n")
-        
-        if timestamps:
-            total_copied_duration = sum(ts['duration_seconds'] for ts in timestamps)
-            total_video_duration = total_frames / fps
-            
-            f.write(f"Total Copied Duration: {format_duration(total_copied_duration)}\n")
-            f.write(f"Total Video Duration: {format_duration(total_video_duration)}\n")
-            f.write(f"Duration Percentage: {(total_copied_duration/total_video_duration)*100:.1f}%\n\n")
-            
-            f.write(f"COPIED SEGMENTS:\n")
-            f.write(f"{'#':<3} {'Start Time':<15} {'End Time':<15} {'Duration':<12} {'Frames':<8} {'%':<6}\n")
-            f.write(f"{'-'*80}\n")
-            
-            for i, ts in enumerate(timestamps, 1):
-                percentage = (ts['frame_count'] / total_frames) * 100
-                f.write(f"{i:<3} {ts['start']:<15} {ts['end']:<15} {ts['duration']:<12} "
-                       f"{ts['frame_count']:<8} {percentage:.1f}%\n")
-            
-            f.write(f"\nSTATISTICS:\n")
-            f.write(f"Average segment duration: {format_duration(total_copied_duration/len(timestamps))}\n")
-            f.write(f"Longest segment: {format_duration(max(ts['duration_seconds'] for ts in timestamps))}\n")
-            f.write(f"Shortest segment: {format_duration(min(ts['duration_seconds'] for ts in timestamps))}\n")
-        else:
-            f.write(f"No copied segments detected!\n")
-    
-    print(f"Timeline analysis saved to: {filename}")
-    return filename
-
 def cleanup(video_path=None, frames=None):
     """Clean temporary files with improved error handling"""
     try:
@@ -244,17 +282,17 @@ def clear_gpu_memory():
 # ======================
 # Core Functionality
 # ======================
-def load_reference_data(yolo):
+def load_reference_data(yolo, reference_video_path):
     """Load and process reference video with YOLOv8"""
     try:
-        if not os.path.exists(REFERENCE_VIDEO_PATH):
-            raise FileNotFoundError(f"Reference video missing at {REFERENCE_VIDEO_PATH}")
+        if not os.path.exists(reference_video_path):
+            raise FileNotFoundError(f"Reference video missing at {reference_video_path}")
         
-        print(f"Loading reference video: {REFERENCE_VIDEO_PATH}")
+        print(f"Loading reference video: {reference_video_path}")
         
         # Extract frames from reference video
         ref_frames = extract_frames(
-            REFERENCE_VIDEO_PATH,
+            reference_video_path,
             output_dir="assets/frames/reference",
             frame_interval=FRAME_EXTRACTION_INTERVAL,
             target_size=FRAME_TARGET_SIZE
@@ -363,7 +401,7 @@ def extract_frames_cpu(video_path, output_dir, frame_interval=1, target_size=Non
 # Video Processing
 # ======================
 def process_video(firebase, video, reference_data, yolo):
-    """Process single video with YOLOv8 and detailed timeline output"""
+    """Process single video with YOLOv8 and save results to Firebase"""
     video_id = video.get('id')
     video_path = None
     target_frames = []
@@ -394,7 +432,7 @@ def process_video(firebase, video, reference_data, yolo):
             if not cap.isOpened():
                 raise ValueError(f"Could not open video file: {video_path}")
                 
-            fps = cap.get(cv2.CAP_PROP_FPS)
+            fps = float(cap.get(cv2.CAP_PROP_FPS))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             duration = total_frames / fps if fps > 0 else 0
             cap.release()
@@ -435,9 +473,9 @@ def process_video(firebase, video, reference_data, yolo):
         except Exception as comparison_error:
             raise Exception(f"Comparison failed: {comparison_error}")
 
-        # Calculate results
-        matched_frames = sum(copied_frames)
-        copy_percent = (matched_frames / len(target_frames)) * 100 if target_frames else 0
+        # Calculate results - ensure all values are Python native types
+        matched_frames = int(sum(bool(frame) for frame in copied_frames))  # Convert to int, handle numpy bools
+        copy_percent = float((matched_frames / len(target_frames)) * 100) if target_frames else 0.0
         
         print(f"\nYOLOv8 Analysis Results:")
         print(f"Match percentage: {copy_percent:.2f}% ({matched_frames}/{len(target_frames)} frames)")
@@ -450,36 +488,42 @@ def process_video(firebase, video, reference_data, yolo):
         # Print detailed timeline to console
         print_detailed_timeline(timestamps, video_id, copy_percent, len(target_frames), fps)
         
-        # Save timeline to file
-        timeline_file = save_timeline_to_file(timestamps, video_id, copy_percent, len(target_frames), fps)
-        
         # Prepare simplified timestamps for Firebase (backward compatibility)
         simple_timestamps = [
             {
-                'start': ts['start'].split('.')[0],  # Remove milliseconds for Firebase
-                'end': ts['end'].split('.')[0]
+                'start': str(ts['start'].split('.')[0]),  # Remove milliseconds for Firebase
+                'end': str(ts['end'].split('.')[0])
             }
             for ts in timestamps
         ]
 
-        # Save results to Firebase
-        firebase.save_results(video_id, {
-            'video_id': video_id,
+        # Calculate total copied duration with proper type conversion
+        total_copied_duration = float(sum(ts['duration_seconds'] for ts in timestamps))
+        video_duration = float(len(target_frames) / fps)
+
+        # Save results to Firebase (updated structure) - ensure all values are Python native types
+        results_data = {
+            'video_id': str(video_id),
             'status': 'completed',
-            'copied': copy_percent >= (MIN_SIMILARITY_THRESHOLD * 100),
-            'copy_percentage': round(copy_percent, 2),
+            'copied': bool(copy_percent >= (MIN_SIMILARITY_THRESHOLD * 100)),  # Explicit bool conversion
+            'copy_percentage': float(round(copy_percent, 2)),  # Explicit float conversion
             'timestamps': simple_timestamps,
             'detailed_analysis': {
-                'total_segments': len(timestamps),
-                'total_copied_duration': sum(ts['duration_seconds'] for ts in timestamps),
-                'timeline_file': timeline_file
+                'total_segments': int(len(timestamps)),
+                'total_copied_duration': float(total_copied_duration),
+                'total_frames': int(len(target_frames)),
+                'fps': float(fps),
+                'video_duration': float(video_duration)
             },
-            'model_used': YOLO_MODEL,
+            'model_used': str(YOLO_MODEL),
+            'threshold_used': float(MIN_SIMILARITY_THRESHOLD),
             'processed_at': firestore.SERVER_TIMESTAMP
-        })
+        }
+        
+        firebase.save_results(video_id, results_data)
         
         print(f"\nSuccessfully processed {video_id}")
-        print(f"Results saved to Firebase and timeline file: {timeline_file}")
+        print(f"Results saved to Firebase")
 
     except Exception as e:
         print(f"\nProcessing failed: {e}")
@@ -494,7 +538,7 @@ def process_video(firebase, video, reference_data, yolo):
 # Main Application
 # ======================
 def main():
-    """Application entry point with YOLOv8 support and detailed timeline"""
+    """Application entry point with YOLOv8 support and Firebase integration"""
     try:
         print(f"Starting YOLOv8 Video Similarity Detection Service")
         print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -502,6 +546,9 @@ def main():
         print("="*60)
         
         create_required_directories()
+        
+        # Setup reference video (download if needed)
+        reference_video_path = setup_reference_video()
         
         # Initialize Firebase
         firebase = FirebaseHandler()
@@ -520,7 +567,7 @@ def main():
         
         # Load reference data
         print("\nLoading reference data...")
-        reference_data = load_reference_data(yolo)
+        reference_data = load_reference_data(yolo, reference_video_path)
         
         if not reference_data:
             print("CRITICAL: No reference data loaded. Cannot proceed.")
@@ -568,7 +615,30 @@ def main():
     finally:
         print("Service shutdown completed")
 
+def check_dependencies():
+    """Check if required dependencies are available"""
+    try:
+        import yt_dlp
+        print(f"yt-dlp version: {yt_dlp.version.__version__}")
+    except ImportError:
+        print("ERROR: yt-dlp not found. Please install with: pip install yt-dlp")
+        return False
+    
+    try:
+        result = subprocess.run(['yt-dlp', '--version'], capture_output=True, text=True)
+        print(f"yt-dlp command available: {result.stdout.strip()}")
+    except FileNotFoundError:
+        print("ERROR: yt-dlp command not found in PATH")
+        return False
+    
+    return True
+
 if __name__ == "__main__":
+    # Check dependencies first
+    if not check_dependencies():
+        print("Please install missing dependencies and try again.")
+        sys.exit(1)
+    
     # Print system info
     print("System Information:")
     print(f"Python version: {sys.version}")
