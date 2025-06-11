@@ -635,6 +635,7 @@ def check_dependencies():
 
 if __name__ == "__main__":
     # Check dependencies first
+    
     if not check_dependencies():
         print("Please install missing dependencies and try again.")
         sys.exit(1)
