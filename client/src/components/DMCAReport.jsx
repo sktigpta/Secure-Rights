@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Shield, Upload, AlertCircle, ArrowLeft, Home, Sparkles, Loader2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Shield, Upload, AlertCircle, ArrowLeft, Home, Wand2, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 function DMCAReport() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     videoId: '',
     videoUrl: '',
+    videoTitle: '',
     infringingContent: '',
     originalContent: '',
     documents: {
@@ -14,26 +19,177 @@ function DMCAReport() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [generatingDescriptions, setGeneratingDescriptions] = useState(false);
 
   useEffect(() => {
     // Check if we have pre-filled data from the processed video section
-    // This would be replaced with actual routing logic in a real app
-    const mockVideoData = {
-      videoId: '-P3QD6Gu4wM',
-      videoUrl: 'https://www.youtube.com/watch?v=-P3QD6Gu4wM',
-      title: 'Poison Candy Challenge. #love #poisonapple #poison #challenge',
-      description: 'This video has been identified as containing potentially infringing content with a copy percentage of 9.2%.'
-    };
+    if (location.state?.videoData) {
+      const { videoId, videoUrl, title, description } = location.state.videoData;
+      setFormData(prev => ({
+        ...prev,
+        videoId,
+        videoUrl,
+        videoTitle: title || '',
+        infringingContent: `Video titled "${title}" contains infringing content. ${description || ''}`,
+        originalContent: 'Please describe your original content here...'
+      }));
+    }
+  }, [location.state]);
+
+  const extractVideoIdFromUrl = (url) => {
+    if (!url) return '';
     
-    setFormData(prev => ({
-      ...prev,
-      videoId: mockVideoData.videoId,
-      videoUrl: mockVideoData.videoUrl,
-      infringingContent: `Video titled "${mockVideoData.title}" contains infringing content. ${mockVideoData.description || ''}`,
-      originalContent: 'Please describe your original content here...'
-    }));
-  }, []);
+    // YouTube URL patterns
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /^([a-zA-Z0-9_-]{11})$/ // Direct video ID
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    
+    return '';
+  };
+
+  const fetchVideoInfo = async (videoId) => {
+    try {
+      // You can implement YouTube API call here to get video title and description
+      // For now, we'll use the videoId to generate descriptions
+      return {
+        title: formData.videoTitle || `Video ${videoId}`,
+        description: ''
+      };
+    } catch (error) {
+      console.error('Failed to fetch video info:', error);
+      return {
+        title: formData.videoTitle || `Video ${videoId}`,
+        description: ''
+      };
+    }
+  };
+
+  const generateDescriptionsWithGemini = async (videoTitle, videoId, videoUrl) => {
+    try {
+      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!GEMINI_API_KEY) {
+        throw new Error('Gemini API key not found in environment variables');
+      }
+
+      const prompt = `
+        As a legal assistant, help generate professional DMCA takedown descriptions for the following video:
+        
+        Video Title: "${videoTitle}"
+        Video ID: ${videoId}
+        Video URL: ${videoUrl}
+        
+        Please provide two separate descriptions:
+        
+        1. INFRINGING_CONTENT_DESCRIPTION: A professional description of the allegedly infringing content. Focus on what copyrighted material appears to be used without permission. Keep it factual and specific. (2-3 sentences)
+        
+        2. ORIGINAL_CONTENT_DESCRIPTION: A template description for the original content that the user can customize. Make it professional and suitable for legal documentation. Include placeholders where the user should add specific details about their original work. (2-3 sentences)
+        
+        Format your response as JSON:
+        {
+          "infringingContent": "description here",
+          "originalContent": "description here"
+        }
+        
+        Keep descriptions professional, factual, and appropriate for legal documentation.
+      `;
+
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      const generatedText = response.data.candidates[0].content.parts[0].text;
+      
+      // Extract JSON from the response
+      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsedResponse = JSON.parse(jsonMatch[0]);
+        return parsedResponse;
+      } else {
+        // Fallback if JSON parsing fails
+        return {
+          infringingContent: `The video titled "${videoTitle}" (ID: ${videoId}) appears to contain copyrighted material that may be used without proper authorization. This content may include protected audiovisual elements, music, or other intellectual property.`,
+          originalContent: `I am the rightful owner of the original copyrighted work that is being infringed upon in the above-mentioned video. My original content includes [please specify: music, video, images, text, or other creative work] created on [date] and first published/distributed on [platform/date]. I have not authorized the use of this content in the reported video.`
+        };
+      }
+    } catch (error) {
+      console.error('Error generating descriptions with Gemini:', error);
+      
+      // Fallback descriptions
+      return {
+        infringingContent: `The video titled "${videoTitle}" (ID: ${videoId}) appears to contain copyrighted material that may be used without proper authorization. This content may include protected audiovisual elements, music, or other intellectual property.`,
+        originalContent: `I am the rightful owner of the original copyrighted work that is being infringed upon in the above-mentioned video. My original content includes [please specify: music, video, images, text, or other creative work] created on [date] and first published/distributed on [platform/date]. I have not authorized the use of this content in the reported video.`
+      };
+    }
+  };
+
+  const handleAutoGenerate = async () => {
+    if (!formData.videoUrl && !formData.videoId) {
+      setError('Please provide either a video URL or video ID to generate descriptions');
+      return;
+    }
+
+    setGeneratingDescriptions(true);
+    setError('');
+
+    try {
+      let videoId = formData.videoId;
+      
+      // Extract video ID from URL if not provided
+      if (!videoId && formData.videoUrl) {
+        videoId = extractVideoIdFromUrl(formData.videoUrl);
+        if (videoId) {
+          setFormData(prev => ({ ...prev, videoId }));
+        }
+      }
+
+      if (!videoId) {
+        throw new Error('Could not extract video ID from the provided URL');
+      }
+
+      // Fetch video info (you might want to implement YouTube API here)
+      const videoInfo = await fetchVideoInfo(videoId);
+      
+      // Generate descriptions using Gemini
+      const descriptions = await generateDescriptionsWithGemini(
+        videoInfo.title || formData.videoTitle || `Video ${videoId}`,
+        videoId,
+        formData.videoUrl
+      );
+
+      setFormData(prev => ({
+        ...prev,
+        videoId,
+        videoTitle: videoInfo.title || prev.videoTitle,
+        infringingContent: descriptions.infringingContent,
+        originalContent: descriptions.originalContent
+      }));
+
+    } catch (err) {
+      console.error('Auto-generation error:', err);
+      setError(err.message || 'Failed to generate descriptions automatically');
+    } finally {
+      setGeneratingDescriptions(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -41,6 +197,18 @@ function DMCAReport() {
       ...prev,
       [name]: value
     }));
+
+    // Auto-extract video ID when URL changes
+    if (name === 'videoUrl' && value) {
+      const extractedId = extractVideoIdFromUrl(value);
+      if (extractedId && extractedId !== prev.videoId) {
+        setFormData(prevState => ({
+          ...prevState,
+          videoId: extractedId,
+          [name]: value
+        }));
+      }
+    }
   };
 
   const handleFileChange = (e, type) => {
@@ -54,160 +222,42 @@ function DMCAReport() {
     }));
   };
 
-  const generateAIDescription = async () => {
-    if (!formData.infringingContent.trim()) {
-      setError('Please fill in the "Description of Infringing Content" field first to generate an AI description.');
-      return;
-    }
-
-    setAiLoading(true);
-    setError('');
-
-    try {
-      // In a real app, you would use: const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-      // For demo purposes, we'll simulate the API call
-      const GEMINI_API_KEY = 'your-gemini-api-key-here';
-      
-      if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your-gemini-api-key-here') {
-        // Simulate AI response for demo
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const simulatedResponse = `Based on the infringing content described, the original content appears to be a creative video production featuring:
-
-• Original choreographed content or performance art
-• Unique visual storytelling elements and cinematography
-• Custom music composition or licensed soundtrack
-• Creative editing techniques and post-production effects
-• Original character development or narrative structure
-• Distinctive artistic style and visual presentation
-
-The original work represents substantial creative effort in concept development, production planning, filming, and post-production editing. The content demonstrates originality in its artistic expression, visual composition, and overall creative execution that merits copyright protection under intellectual property law.`;
-
-        setFormData(prev => ({
-          ...prev,
-          originalContent: simulatedResponse
-        }));
-        return;
-      }
-
-      const prompt = `Based on the following description of infringing content, generate a professional and detailed description of what the original content likely is. Focus on describing the creative elements, format, style, and characteristics that would make it original copyrightable content. Keep it professional and suitable for a DMCA report.
-
-Infringing content description: "${formData.infringingContent}"
-
-Generate a description of the original content that was infringed:`;
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: prompt
-              }]
-            }]
-          })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-        const generatedDescription = data.candidates[0].content.parts[0].text.trim();
-        setFormData(prev => ({
-          ...prev,
-          originalContent: generatedDescription
-        }));
-      } else {
-        throw new Error('No response generated from AI');
-      }
-    } catch (err) {
-      console.error('AI generation error:', err);
-      if (err.message.includes('403')) {
-        setError('AI service access denied. Please check your API key.');
-      } else if (err.message.includes('400')) {
-        setError('Invalid request to AI service. Please check your input.');
-      } else if (err.message.includes('API key')) {
-        setError('Gemini API key not found. Please add VITE_GEMINI_API_KEY to your environment variables.');
-      } else {
-        setError('Failed to generate AI description. Please try again or write manually.');
-      }
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Simulate form submission for demo
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Validate required fields
-      if (!formData.videoId || !formData.videoUrl || !formData.infringingContent || !formData.originalContent) {
-        throw new Error('Please fill in all required fields');
-      }
-
-      // In a real app, you would submit to your API:
-      /*
+      // Get the auth token
       const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('Authentication token not found. Please log in again.');
       }
 
+      // Validate required fields
+      if (!formData.videoId || !formData.videoUrl || !formData.infringingContent || !formData.originalContent) {
+        throw new Error('Please fill in all required fields');
+      }
+
       const formDataToSend = new FormData();
+      
+      // Add text fields
       formDataToSend.append('videoId', formData.videoId);
       formDataToSend.append('videoUrl', formData.videoUrl);
       formDataToSend.append('infringingContent', formData.infringingContent);
       formDataToSend.append('originalContent', formData.originalContent);
 
+      // Add documents if they exist
       if (formData.documents.proofOfOwnership) {
         formDataToSend.append('documents[proofOfOwnership]', formData.documents.proofOfOwnership);
       }
       if (formData.documents.identification) {
         formDataToSend.append('documents[identification]', formData.documents.identification);
       }
-      
-      const API_URL = import.meta.env.VITE_API_URL
-      const response = await fetch(`${API_URL}/dmca/report`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit report');
-      }
-
-      const data = await response.json();
-      if (data.reportId) {
-        // Navigate to status page
-        console.log('Report submitted:', data.reportId);
-      }
-      */
-
-      // Demo success message
-      alert('DMCA report submitted successfully! (Demo mode)');
-      
-    } catch (err) {
-      console.error('DMCA submission error:', err);
-      setError(err.message || 'Failed to submit DMCA report');
-    } finally {
-      setLoading(false);
-    }
-  };[0] + ': ' + pair[1]);
+      // Log the FormData contents for debugging
+      for (let pair of formDataToSend.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
       }
       
       const API_URL = import.meta.env.VITE_API_URL
@@ -258,14 +308,14 @@ Generate a description of the original content that was infringed:`;
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => window.history.back()}
+                  onClick={() => navigate(-1)}
                   className="flex items-center px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors duration-200"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
                 </button>
                 <button
-                  onClick={() => console.log('Navigate to dashboard')}
+                  onClick={() => navigate('/dashboard')}
                   className="flex items-center px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors duration-200"
                 >
                   <Home className="h-4 w-4 mr-2" />
@@ -283,7 +333,7 @@ Generate a description of the original content that was infringed:`;
               </div>
             )}
 
-            <div onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Video URL <span className="text-red-500">*</span>
@@ -316,6 +366,50 @@ Generate a description of the original content that was infringed:`;
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Video Title (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="videoTitle"
+                  value={formData.videoTitle}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm"
+                  placeholder="Enter video title for better AI generation"
+                />
+              </div>
+
+              {/* Auto-generate button */}
+              <div className="bg-gradient-to-r from-purple-50 to-sky-50 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-800">AI-Powered Description Generation</h3>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Automatically generate professional DMCA descriptions using AI
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerate}
+                    disabled={generatingDescriptions || (!formData.videoUrl && !formData.videoId)}
+                    className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-sky-600 hover:from-purple-700 hover:to-sky-700 disabled:from-gray-400 disabled:to-gray-400 text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
+                  >
+                    {generatingDescriptions ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        Generate AI Descriptions
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description of Infringing Content <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -324,47 +418,24 @@ Generate a description of the original content that was infringed:`;
                   onChange={handleInputChange}
                   rows="4"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none"
-                  placeholder="Describe the infringing content..."
+                  placeholder="Describe the infringing content... (or use AI generation above)"
                   required
                 />
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Description of Original Content <span className="text-red-500">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={generateAIDescription}
-                    disabled={aiLoading || !formData.infringingContent.trim()}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-                  >
-                    {aiLoading ? (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-3 w-3" />
-                        Generate with AI
-                      </>
-                    )}
-                  </button>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description of Original Content <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="originalContent"
                   value={formData.originalContent}
                   onChange={handleInputChange}
                   rows="4"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none"
-                  placeholder="Describe your original content... (or use AI to generate based on infringing content description)"
+                  placeholder="Describe your original content... (or use AI generation above)"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  💡 Tip: Fill in the infringing content description first, then click "Generate with AI" for an automated description of your original content.
-                </p>
               </div>
 
               <div>
@@ -435,7 +506,7 @@ Generate a description of the original content that was infringed:`;
                   <Shield className="h-4 w-4" />
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </div>
