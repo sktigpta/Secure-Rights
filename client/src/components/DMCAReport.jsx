@@ -105,6 +105,7 @@ function DMCAReport() {
       }, delay);
     });
   };
+  const generateDescriptionsWithGemini = async (videoTitle, videoId, videoUrl) => {
     try {
       const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
       
