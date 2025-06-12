@@ -20,6 +20,7 @@ function DMCAReport() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatingDescriptions, setGeneratingDescriptions] = useState(false);
+  const [animatingText, setAnimatingText] = useState({ infringing: false, original: false });
 
   useEffect(() => {
     // Check if we have pre-filled data from the processed video section
@@ -70,7 +71,40 @@ function DMCAReport() {
     }
   };
 
-  const generateDescriptionsWithGemini = async (videoTitle, videoId, videoUrl) => {
+  const animateTextGeneration = (text, fieldName, delay = 0) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        setAnimatingText(prev => ({ ...prev, [fieldName]: true }));
+        
+        // Start with empty text
+        setFormData(prev => ({
+          ...prev,
+          [fieldName === 'infringing' ? 'infringingContent' : 'originalContent']: ''
+        }));
+
+        // Animate text character by character
+        let currentIndex = 0;
+        const animateChar = () => {
+          if (currentIndex <= text.length) {
+            const currentText = text.substring(0, currentIndex);
+            setFormData(prev => ({
+              ...prev,
+              [fieldName === 'infringing' ? 'infringingContent' : 'originalContent']: currentText
+            }));
+            currentIndex++;
+            setTimeout(animateChar, 30 + Math.random() * 20); // Vary speed slightly
+          } else {
+            // Animation complete
+            setTimeout(() => {
+              setAnimatingText(prev => ({ ...prev, [fieldName]: false }));
+              resolve();
+            }, 500);
+          }
+        };
+        animateChar();
+      }, delay);
+    });
+  };
     try {
       const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
       
@@ -175,12 +209,16 @@ function DMCAReport() {
         formData.videoUrl
       );
 
+      // Animate the text generation with cool effects
+      await Promise.all([
+        animateTextGeneration(descriptions.infringingContent, 'infringing', 0),
+        animateTextGeneration(descriptions.originalContent, 'original', 800)
+      ]);
+
       setFormData(prev => ({
         ...prev,
         videoId,
-        videoTitle: videoInfo.title || prev.videoTitle,
-        infringingContent: descriptions.infringingContent,
-        originalContent: descriptions.originalContent
+        videoTitle: videoInfo.title || prev.videoTitle
       }));
 
     } catch (err) {
@@ -292,6 +330,35 @@ function DMCAReport() {
   };
 
   return (
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <style jsx>{`
+        @keyframes gradient-wipe {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        
+        @keyframes text-glow {
+          0%, 100% { text-shadow: 0 0 10px rgba(139, 92, 246, 0.3), 0 0 20px rgba(14, 165, 233, 0.2); }
+          50% { text-shadow: 0 0 20px rgba(139, 92, 246, 0.6), 0 0 30px rgba(14, 165, 233, 0.4), 0 0 40px rgba(139, 92, 246, 0.2); }
+        }
+        
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        
+        .gradient-text-animate {
+          background: linear-gradient(90deg, #8b5cf6, #0ea5e9, #8b5cf6);
+          background-size: 200% 100%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: gradient-wipe 2s ease-in-out infinite;
+        }
+        
+        .shimmer-overlay {
+          animation: shimmer 2s ease-in-out infinite;
+        }
+      `}</style>
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -412,30 +479,68 @@ function DMCAReport() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description of Infringing Content <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  name="infringingContent"
-                  value={formData.infringingContent}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none"
-                  placeholder="Describe the infringing content... (or use AI generation above)"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    name="infringingContent"
+                    value={formData.infringingContent}
+                    onChange={handleInputChange}
+                    rows="4"
+                    className={`w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none transition-all duration-300 ${
+                      animatingText.infringing 
+                        ? 'bg-gradient-to-r from-purple-50 via-sky-50 to-purple-50 text-transparent bg-clip-text animate-pulse shadow-lg ring-2 ring-purple-200' 
+                        : ''
+                    }`}
+                    style={animatingText.infringing ? {
+                      background: 'linear-gradient(90deg, #8b5cf6, #0ea5e9, #8b5cf6)',
+                      backgroundSize: '200% 100%',
+                      animation: 'gradient-wipe 2s ease-in-out infinite, text-glow 1.5s ease-in-out infinite',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      textShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
+                    } : {}}
+                    placeholder="Describe the infringing content... (or use AI generation above)"
+                    required
+                  />
+                  {animatingText.infringing && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="h-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse rounded-lg"></div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description of Original Content <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  name="originalContent"
-                  value={formData.originalContent}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none"
-                  placeholder="Describe your original content... (or use AI generation above)"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    name="originalContent"
+                    value={formData.originalContent}
+                    onChange={handleInputChange}
+                    rows="4"
+                    className={`w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none transition-all duration-300 ${
+                      animatingText.original 
+                        ? 'bg-gradient-to-r from-purple-50 via-sky-50 to-purple-50 text-transparent bg-clip-text animate-pulse shadow-lg ring-2 ring-purple-200' 
+                        : ''
+                    }`}
+                    style={animatingText.original ? {
+                      background: 'linear-gradient(90deg, #8b5cf6, #0ea5e9, #8b5cf6)',
+                      backgroundSize: '200% 100%',
+                      animation: 'gradient-wipe 2s ease-in-out infinite, text-glow 1.5s ease-in-out infinite',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      textShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
+                    } : {}}
+                    placeholder="Describe your original content... (or use AI generation above)"
+                    required
+                  />
+                  {animatingText.original && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="h-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse rounded-lg"></div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
