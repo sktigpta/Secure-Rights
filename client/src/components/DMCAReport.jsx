@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Shield, Upload, AlertCircle, ArrowLeft, Home } from 'lucide-react';
-import axios from 'axios';
+import { Shield, Upload, AlertCircle, ArrowLeft, Home, Sparkles, Loader2 } from 'lucide-react';
 
 function DMCAReport() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [formData, setFormData] = useState({
     videoId: '',
     videoUrl: '',
@@ -18,20 +14,26 @@ function DMCAReport() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     // Check if we have pre-filled data from the processed video section
-    if (location.state?.videoData) {
-      const { videoId, videoUrl, title, description } = location.state.videoData;
-      setFormData(prev => ({
-        ...prev,
-        videoId,
-        videoUrl,
-        infringingContent: `Video titled "${title}" contains infringing content. ${description || ''}`,
-        originalContent: 'Please describe your original content here...'
-      }));
-    }
-  }, [location.state]);
+    // This would be replaced with actual routing logic in a real app
+    const mockVideoData = {
+      videoId: '-P3QD6Gu4wM',
+      videoUrl: 'https://www.youtube.com/watch?v=-P3QD6Gu4wM',
+      title: 'Poison Candy Challenge. #love #poisonapple #poison #challenge',
+      description: 'This video has been identified as containing potentially infringing content with a copy percentage of 9.2%.'
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      videoId: mockVideoData.videoId,
+      videoUrl: mockVideoData.videoUrl,
+      infringingContent: `Video titled "${mockVideoData.title}" contains infringing content. ${mockVideoData.description || ''}`,
+      originalContent: 'Please describe your original content here...'
+    }));
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -52,42 +54,160 @@ function DMCAReport() {
     }));
   };
 
+  const generateAIDescription = async () => {
+    if (!formData.infringingContent.trim()) {
+      setError('Please fill in the "Description of Infringing Content" field first to generate an AI description.');
+      return;
+    }
+
+    setAiLoading(true);
+    setError('');
+
+    try {
+      // In a real app, you would use: const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+      // For demo purposes, we'll simulate the API call
+      const GEMINI_API_KEY = 'your-gemini-api-key-here';
+      
+      if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your-gemini-api-key-here') {
+        // Simulate AI response for demo
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const simulatedResponse = `Based on the infringing content described, the original content appears to be a creative video production featuring:
+
+• Original choreographed content or performance art
+• Unique visual storytelling elements and cinematography
+• Custom music composition or licensed soundtrack
+• Creative editing techniques and post-production effects
+• Original character development or narrative structure
+• Distinctive artistic style and visual presentation
+
+The original work represents substantial creative effort in concept development, production planning, filming, and post-production editing. The content demonstrates originality in its artistic expression, visual composition, and overall creative execution that merits copyright protection under intellectual property law.`;
+
+        setFormData(prev => ({
+          ...prev,
+          originalContent: simulatedResponse
+        }));
+        return;
+      }
+
+      const prompt = `Based on the following description of infringing content, generate a professional and detailed description of what the original content likely is. Focus on describing the creative elements, format, style, and characteristics that would make it original copyrightable content. Keep it professional and suitable for a DMCA report.
+
+Infringing content description: "${formData.infringingContent}"
+
+Generate a description of the original content that was infringed:`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }]
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const generatedDescription = data.candidates[0].content.parts[0].text.trim();
+        setFormData(prev => ({
+          ...prev,
+          originalContent: generatedDescription
+        }));
+      } else {
+        throw new Error('No response generated from AI');
+      }
+    } catch (err) {
+      console.error('AI generation error:', err);
+      if (err.message.includes('403')) {
+        setError('AI service access denied. Please check your API key.');
+      } else if (err.message.includes('400')) {
+        setError('Invalid request to AI service. Please check your input.');
+      } else if (err.message.includes('API key')) {
+        setError('Gemini API key not found. Please add VITE_GEMINI_API_KEY to your environment variables.');
+      } else {
+        setError('Failed to generate AI description. Please try again or write manually.');
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Get the auth token
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in again.');
-      }
-
+      // Simulate form submission for demo
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       // Validate required fields
       if (!formData.videoId || !formData.videoUrl || !formData.infringingContent || !formData.originalContent) {
         throw new Error('Please fill in all required fields');
       }
 
+      // In a real app, you would submit to your API:
+      /*
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in again.');
+      }
+
       const formDataToSend = new FormData();
-      
-      // Add text fields
       formDataToSend.append('videoId', formData.videoId);
       formDataToSend.append('videoUrl', formData.videoUrl);
       formDataToSend.append('infringingContent', formData.infringingContent);
       formDataToSend.append('originalContent', formData.originalContent);
 
-      // Add documents if they exist
       if (formData.documents.proofOfOwnership) {
         formDataToSend.append('documents[proofOfOwnership]', formData.documents.proofOfOwnership);
       }
       if (formData.documents.identification) {
         formDataToSend.append('documents[identification]', formData.documents.identification);
       }
+      
+      const API_URL = import.meta.env.VITE_API_URL
+      const response = await fetch(`${API_URL}/dmca/report`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataToSend
+      });
 
-      // Log the FormData contents for debugging
-      for (let pair of formDataToSend.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
+      if (!response.ok) {
+        throw new Error('Failed to submit report');
+      }
+
+      const data = await response.json();
+      if (data.reportId) {
+        // Navigate to status page
+        console.log('Report submitted:', data.reportId);
+      }
+      */
+
+      // Demo success message
+      alert('DMCA report submitted successfully! (Demo mode)');
+      
+    } catch (err) {
+      console.error('DMCA submission error:', err);
+      setError(err.message || 'Failed to submit DMCA report');
+    } finally {
+      setLoading(false);
+    }
+  };[0] + ': ' + pair[1]);
       }
       
       const API_URL = import.meta.env.VITE_API_URL
@@ -138,14 +258,14 @@ function DMCAReport() {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => navigate(-1)}
+                  onClick={() => window.history.back()}
                   className="flex items-center px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors duration-200"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
                 </button>
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => console.log('Navigate to dashboard')}
                   className="flex items-center px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors duration-200"
                 >
                   <Home className="h-4 w-4 mr-2" />
@@ -163,7 +283,7 @@ function DMCAReport() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Video URL <span className="text-red-500">*</span>
@@ -210,18 +330,41 @@ function DMCAReport() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description of Original Content <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description of Original Content <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generateAIDescription}
+                    disabled={aiLoading || !formData.infringingContent.trim()}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                  >
+                    {aiLoading ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3 w-3" />
+                        Generate with AI
+                      </>
+                    )}
+                  </button>
+                </div>
                 <textarea
                   name="originalContent"
                   value={formData.originalContent}
                   onChange={handleInputChange}
                   rows="4"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none"
-                  placeholder="Describe your original content..."
+                  placeholder="Describe your original content... (or use AI to generate based on infringing content description)"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Tip: Fill in the infringing content description first, then click "Generate with AI" for an automated description of your original content.
+                </p>
               </div>
 
               <div>
@@ -292,7 +435,7 @@ function DMCAReport() {
                   <Shield className="h-4 w-4" />
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
