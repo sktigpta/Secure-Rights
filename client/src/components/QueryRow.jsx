@@ -117,8 +117,9 @@ const QueryRow = ({ onNotification }) => {
   }
 
   return (
-    <div className="flex items-center gap-3 w-full relative">
-      <div className="relative min-w-[250px]">
+    <div className="w-full">
+      {/* Input Section */}
+      <div className="relative w-full mb-3 sm:mb-0 sm:min-w-[250px] sm:max-w-[300px]">
         <input
           type="text"
           className="w-full py-2 pl-3 pr-8 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-600 transition-colors duration-200"
@@ -136,23 +137,61 @@ const QueryRow = ({ onNotification }) => {
         </div>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {queries.map((query) => (
-          <div
-            className="flex items-center gap-1.5 bg-sky-100 text-sky-700 rounded-full py-1.5 px-3 text-sm whitespace-nowrap"
-            key={query.id}
-          >
-            <span>{query.query}</span>
-            <button
-              className="flex items-center justify-center text-sky-700 opacity-70 hover:opacity-100 transition-opacity duration-200"
-              onClick={() => deleteQuery(query.id, query.query)}
-              aria-label={`Delete query: ${query.query}`}
-            >
-              <X size={14} />
-            </button>
+      {/* Tags Section - Responsive */}
+      {queries.length > 0 && (
+        <div className="w-full">
+          {/* Mobile: Horizontal scroll */}
+          <div className="flex sm:hidden overflow-x-auto scrollbar-hide gap-2 pb-2 -mx-1 px-1">
+            <div className="flex gap-2 min-w-max">
+              {queries.map((query) => (
+                <div
+                  className="flex items-center gap-1.5 bg-sky-100 text-sky-700 rounded-full py-1.5 px-3 text-sm whitespace-nowrap flex-shrink-0"
+                  key={query.id}
+                >
+                  <span>{query.query}</span>
+                  <button
+                    className="flex items-center justify-center text-sky-700 opacity-70 hover:opacity-100 transition-opacity duration-200"
+                    onClick={() => deleteQuery(query.id, query.query)}
+                    aria-label={`Delete query: ${query.query}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+
+          {/* Desktop: Flex wrap */}
+          <div className="hidden sm:flex gap-2 flex-wrap">
+            {queries.map((query) => (
+              <div
+                className="flex items-center gap-1.5 bg-sky-100 text-sky-700 rounded-full py-1.5 px-3 text-sm whitespace-nowrap"
+                key={query.id}
+              >
+                <span>{query.query}</span>
+                <button
+                  className="flex items-center justify-center text-sky-700 opacity-70 hover:opacity-100 transition-opacity duration-200"
+                  onClick={() => deleteQuery(query.id, query.query)}
+                  aria-label={`Delete query: ${query.query}`}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Custom scrollbar styles */}
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   )
 }
