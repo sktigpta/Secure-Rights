@@ -71,40 +71,50 @@ function DMCAReport() {
     }
   };
 
-  const animateTextGeneration = (text, fieldName, delay = 0) => {
+  const animateWordByWord = (text, fieldName, delay = 0) => {
     return new Promise((resolve) => {
       setTimeout(() => {
         setAnimatingText(prev => ({ ...prev, [fieldName]: true }));
         
-        // Start with empty text
+        // Clear the field first
         setFormData(prev => ({
           ...prev,
           [fieldName === 'infringing' ? 'infringingContent' : 'originalContent']: ''
         }));
 
-        // Animate text character by character
-        let currentIndex = 0;
-        const animateChar = () => {
-          if (currentIndex <= text.length) {
-            const currentText = text.substring(0, currentIndex);
+        // Split text into words
+        const words = text.split(' ');
+        let currentWordIndex = 0;
+        
+        const animateWord = () => {
+          if (currentWordIndex <= words.length) {
+            // Get current text up to current word
+            const currentText = words.slice(0, currentWordIndex).join(' ');
+            
             setFormData(prev => ({
               ...prev,
               [fieldName === 'infringing' ? 'infringingContent' : 'originalContent']: currentText
             }));
-            currentIndex++;
-            setTimeout(animateChar, 30 + Math.random() * 20); // Vary speed slightly
+            
+            currentWordIndex++;
+            
+            // Variable timing between words (200-400ms for more dramatic effect)
+            const wordDelay = 200 + Math.random() * 200;
+            setTimeout(animateWord, wordDelay);
           } else {
-            // Animation complete
+            // Animation complete, fade out effects
             setTimeout(() => {
               setAnimatingText(prev => ({ ...prev, [fieldName]: false }));
               resolve();
             }, 500);
           }
         };
-        animateChar();
+        
+        animateWord();
       }, delay);
     });
   };
+
   const generateDescriptionsWithGemini = async (videoTitle, videoId, videoUrl) => {
     try {
       const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -161,8 +171,8 @@ function DMCAReport() {
       } else {
         // Fallback if JSON parsing fails
         return {
-          infringingContent: `The video titled "${videoTitle}" (ID: ${videoId}) appears to contain copyrighted material that may be used without proper authorization. This content may include protected audiovisual elements, music, or other intellectual property.`,
-          originalContent: `I am the rightful owner of the original copyrighted work that is being infringed upon in the above-mentioned video. My original content includes [please specify: music, video, images, text, or other creative work] created on [date] and first published/distributed on [platform/date]. I have not authorized the use of this content in the reported video.`
+          infringingContent: `The video titled "${videoTitle}" (ID: ${videoId}) appears to contain copyrighted material that may be used without proper authorization. This content may include protected audiovisual elements, music, or other intellectual property that infringes upon the original creator's rights.`,
+          originalContent: `I am the rightful owner of the original copyrighted work that is being infringed upon in the above-mentioned video. My original content includes [please specify: music, video, images, text, or other creative work] created on [date] and first published or distributed on [platform/date]. I have not authorized the use of this content in the reported video.`
         };
       }
     } catch (error) {
@@ -170,8 +180,8 @@ function DMCAReport() {
       
       // Fallback descriptions
       return {
-        infringingContent: `The video titled "${videoTitle}" (ID: ${videoId}) appears to contain copyrighted material that may be used without proper authorization. This content may include protected audiovisual elements, music, or other intellectual property.`,
-        originalContent: `I am the rightful owner of the original copyrighted work that is being infringed upon in the above-mentioned video. My original content includes [please specify: music, video, images, text, or other creative work] created on [date] and first published/distributed on [platform/date]. I have not authorized the use of this content in the reported video.`
+        infringingContent: `The video titled "${videoTitle}" (ID: ${videoId}) appears to contain copyrighted material that may be used without proper authorization. This content may include protected audiovisual elements, music, or other intellectual property that infringes upon the original creator's rights.`,
+        originalContent: `I am the rightful owner of the original copyrighted work that is being infringed upon in the above-mentioned video. My original content includes [please specify: music, video, images, text, or other creative work] created on [date] and first published or distributed on [platform/date]. I have not authorized the use of this content in the reported video.`
       };
     }
   };
@@ -210,10 +220,10 @@ function DMCAReport() {
         formData.videoUrl
       );
 
-      // Animate the text generation with cool effects
+      // Start word-by-word animations
       await Promise.all([
-        animateTextGeneration(descriptions.infringingContent, 'infringing', 0),
-        animateTextGeneration(descriptions.originalContent, 'original', 800)
+        animateWordByWord(descriptions.infringingContent, 'infringing', 0),
+        animateWordByWord(descriptions.originalContent, 'original', 1000) // Start second animation after 1 second
       ]);
 
       setFormData(prev => ({
@@ -348,6 +358,17 @@ function DMCAReport() {
           100% { transform: translateX(100%); }
         }
         
+        @keyframes word-glow {
+          0%, 100% { 
+            color: #8b5cf6;
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.4), 0 0 20px rgba(14, 165, 233, 0.3);
+          }
+          50% { 
+            color: #0ea5e9;
+            text-shadow: 0 0 15px rgba(139, 92, 246, 0.6), 0 0 25px rgba(14, 165, 233, 0.5), 0 0 35px rgba(139, 92, 246, 0.3);
+          }
+        }
+        
         .gradient-text-animate {
           background: linear-gradient(90deg, #8b5cf6, #0ea5e9, #8b5cf6);
           background-size: 200% 100%;
@@ -356,11 +377,27 @@ function DMCAReport() {
           animation: gradient-wipe 2s ease-in-out infinite;
         }
         
+        .word-animate {
+          animation: word-glow 1.5s ease-in-out infinite;
+        }
+        
         .shimmer-overlay {
           animation: shimmer 2s ease-in-out infinite;
         }
+        
+        .textarea-animate {
+          background: linear-gradient(135deg, 
+            rgba(139, 92, 246, 0.1) 0%, 
+            rgba(14, 165, 233, 0.1) 25%,
+            rgba(139, 92, 246, 0.1) 50%,
+            rgba(14, 165, 233, 0.1) 75%,
+            rgba(139, 92, 246, 0.1) 100%
+          );
+          background-size: 400% 400%;
+          animation: gradient-wipe 3s ease-in-out infinite;
+        }
       `}</style>
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
@@ -488,23 +525,15 @@ function DMCAReport() {
                     rows="4"
                     className={`w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none transition-all duration-300 ${
                       animatingText.infringing 
-                        ? 'bg-gradient-to-r from-purple-50 via-sky-50 to-purple-50 text-transparent bg-clip-text animate-pulse shadow-lg ring-2 ring-purple-200' 
+                        ? 'textarea-animate shadow-lg ring-2 ring-purple-200 word-animate' 
                         : ''
                     }`}
-                    style={animatingText.infringing ? {
-                      background: 'linear-gradient(90deg, #8b5cf6, #0ea5e9, #8b5cf6)',
-                      backgroundSize: '200% 100%',
-                      animation: 'gradient-wipe 2s ease-in-out infinite, text-glow 1.5s ease-in-out infinite',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      textShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
-                    } : {}}
                     placeholder="Describe the infringing content... (or use AI generation above)"
                     required
                   />
                   {animatingText.infringing && (
                     <div className="absolute inset-0 pointer-events-none">
-                      <div className="h-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse rounded-lg"></div>
+                      <div className="h-full w-full bg-gradient-to-r from-transparent via-purple-100/30 to-transparent shimmer-overlay rounded-lg"></div>
                     </div>
                   )}
                 </div>
@@ -522,23 +551,15 @@ function DMCAReport() {
                     rows="4"
                     className={`w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 text-sm resize-none transition-all duration-300 ${
                       animatingText.original 
-                        ? 'bg-gradient-to-r from-purple-50 via-sky-50 to-purple-50 text-transparent bg-clip-text animate-pulse shadow-lg ring-2 ring-purple-200' 
+                        ? 'textarea-animate shadow-lg ring-2 ring-purple-200 word-animate' 
                         : ''
                     }`}
-                    style={animatingText.original ? {
-                      background: 'linear-gradient(90deg, #8b5cf6, #0ea5e9, #8b5cf6)',
-                      backgroundSize: '200% 100%',
-                      animation: 'gradient-wipe 2s ease-in-out infinite, text-glow 1.5s ease-in-out infinite',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      textShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
-                    } : {}}
                     placeholder="Describe your original content... (or use AI generation above)"
                     required
                   />
                   {animatingText.original && (
                     <div className="absolute inset-0 pointer-events-none">
-                      <div className="h-full w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse rounded-lg"></div>
+                      <div className="h-full w-full bg-gradient-to-r from-transparent via-sky-100/30 to-transparent shimmer-overlay rounded-lg"></div>
                     </div>
                   )}
                 </div>
